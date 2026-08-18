@@ -1,0 +1,41 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  profiles:
+    active: dev
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIENTTVMgamR3dCB0b2tlbiBzaWduaW5nIGFuZCB2ZXJpZmljYXRpb24=}
+  access-token-expiration: 3600000      # 1 hour
+  refresh-token-expiration: 604800000    # 7 days
+  header: Authorization
+  prefix: "Bearer "
+
+# Knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.example.cms: debug
+    org.springframework.security: info

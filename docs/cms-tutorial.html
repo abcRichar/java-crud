@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>从零搭建全栈 CMS 内容管理系统 · 实战教程</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #4338ca;
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --text: #1f2430;
+    --text-2: #5b6472;
+    --text-3: #8a93a5;
+    --border: #e7eaf2;
+    --code-bg: #f4f5f9;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  /* ===== Layout ===== */
+  .layout { display: flex; max-width: 1280px; margin: 0 auto; gap: 28px; padding: 0 24px 80px; }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 250px; flex-shrink: 0; position: sticky; top: 20px;
+    align-self: flex-start; max-height: calc(100vh - 40px); overflow-y: auto;
+    padding: 20px 14px; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: 0 1px 4px rgba(16,24,40,.05);
+  }
+  .sidebar::-webkit-scrollbar { width: 5px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #d5d9e6; border-radius: 3px; }
+  .sidebar-title { font-size: 13px; font-weight: 700; color: var(--text-2); letter-spacing: .5px; padding: 0 10px 10px; border-bottom: 1px dashed var(--border); margin-bottom: 10px; }
+  .sidebar a {
+    display: block; padding: 7px 10px; margin: 2px 0; border-radius: 8px;
+    color: var(--text-2); text-decoration: none; font-size: 13.5px;
+    transition: all .15s; border-left: 3px solid transparent;
+  }
+  .sidebar a:hover { background: var(--primary-light); color: var(--primary); }
+  .sidebar a.active { background: var(--primary-light); color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
+  .sidebar a.sub { padding-left: 24px; font-size: 13px; }
+
+  /* ===== Main ===== */
+  .main { flex: 1; min-width: 0; }
+  section.card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 36px 40px; margin-bottom: 28px; box-shadow: 0 1px 4px rgba(16,24,40,.04);
+    scroll-margin-top: 20px;
+  }
+  h2.sec {
+    font-size: 24px; font-weight: 800; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  h2.sec .no {
+    background: var(--primary); color: #fff; font-size: 13px; font-weight: 700;
+    border-radius: 8px; padding: 3px 10px; letter-spacing: 1px; flex-shrink: 0;
+  }
+  .sec-desc { color: var(--text-2); font-size: 14px; margin-bottom: 22px; }
+  h3 { font-size: 18px; font-weight: 700; margin: 28px 0 12px; padding-left: 12px; border-left: 4px solid var(--primary); scroll-margin-top: 20px; }
+  h4 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; color: var(--primary-dark); }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 0 0 14px 22px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--primary-dark); }
+  a.link { color: var(--primary); }
+
+  /* ===== Tables ===== */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 13.5px; }
+  th {
+    background: #f1f3fa; color: var(--text); font-weight: 700; text-align: left;
+    padding: 10px 12px; border: 1px solid var(--border); white-space: nowrap;
+  }
+  td { padding: 9px 12px; border: 1px solid var(--border); color: var(--text-2); vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfe; }
+  td code, p code, li code {
+    background: var(--primary-light); color: var(--primary-dark); font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 12.5px; padding: 1px 6px; border-radius: 5px;
+  }
+
+  /* ===== Code blocks ===== */
+  .code-wrap {
+    margin: 14px 0 20px; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--code-bg);
+  }
+  .code-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 14px; background: #eceef5; border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--text-2); font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  .code-head .lang { color: var(--primary); font-weight: 700; }
+  pre.code { padding: 14px 18px; overflow-x: auto; font-size: 12.8px; line-height: 1.7; }
+  pre.code code { font-family: "JetBrains Mono", Consolas, "Courier New", monospace; color: #2b3040; }
+  .tok-k { color: #4338ca; font-weight: 600; }
+  .tok-s { color: #059669; }
+  .tok-c { color: #98a1b3; font-style: italic; }
+  .tok-n { color: #b45309; }
+
+  /* ===== Callout ===== */
+  .callout { border-radius: 10px; padding: 14px 18px; margin: 16px 0; font-size: 14px; border: 1px solid; }
+  .callout.tip { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+  .callout.warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+  .callout.info { background: var(--primary-light); border-color: #c7d2fe; color: #3730a3; }
+  .callout .t { font-weight: 700; margin-right: 6px; }
+
+  /* ===== Deep-dive explain block ===== */
+  .explain {
+    margin: 14px 0 22px; padding: 14px 18px 14px 52px;
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 4px solid var(--primary); border-radius: 4px 10px 10px 4px;
+    font-size: 14px; line-height: 1.8; color: var(--text-1);
+    position: relative; box-shadow: 0 1px 3px rgba(16,24,40,.04);
+  }
+  .explain::before {
+    content: "为什么"; position: absolute; left: 0; top: 14px;
+    background: var(--primary); color: #fff; font-size: 11px; font-weight: 700;
+    padding: 3px 8px; border-radius: 0 6px 6px 0; letter-spacing: 1px;
+  }
+  .explain .t { font-weight: 700; color: var(--primary-dark); display: block; margin-bottom: 4px; }
+  .explain p { margin: 4px 0; }
+  .explain ul { margin: 6px 0 2px; padding-left: 20px; }
+  .explain li { margin: 4px 0; }
+  .explain code, .anno-table code {
+    background: var(--primary-light); color: var(--primary-dark);
+    font-family: "JetBrains Mono", Consolas, monospace; font-size: 12.5px;
+    padding: 1px 6px; border-radius: 5px;
+  }
+
+  /* ===== Annotation quick-reference table ===== */
+  .anno-table {
+    width: 100%; border-collapse: collapse; margin: 14px 0 20px;
+    font-size: 13.5px; line-height: 1.65;
+  }
+  .anno-table th {
+    background: var(--primary); color: #fff; text-align: left;
+    padding: 9px 12px; font-weight: 600; font-size: 13px;
+  }
+  .anno-table th:first-child { border-radius: 8px 0 0 0; }
+  .anno-table th:last-child { border-radius: 0 8px 0 0; }
+  .anno-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .anno-table tr:nth-child(even) td { background: #fafaff; }
+  .anno-table tr:hover td { background: var(--primary-light); }
+  .anno-table td:first-child { white-space: nowrap; font-family: "JetBrains Mono", Consolas, monospace; font-weight: 700; color: var(--primary-dark); }
+
+  /* ===== Flow diagrams (CSS) ===== */
+  .flow { display: flex; flex-direction: column; gap: 0; margin: 18px 0 22px; }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .node {
+    background: var(--card); border: 2px solid var(--primary); color: var(--primary-dark);
+    padding: 10px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 600; text-align: center;
+    box-shadow: 0 2px 6px rgba(79,70,229,.08); min-width: 96px;
+  }
+  .node.alt { border-color: var(--green); color: #065f46; }
+  .node.warn { border-color: var(--amber); color: #92400e; }
+  .node.dark { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .arrow { color: var(--text-3); font-size: 18px; font-weight: 700; padding: 0 2px; }
+  .arrow.down { display: block; text-align: center; margin: 2px 0; }
+  .flow-label { text-align: center; font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+  /* ===== Badges ===== */
+  .badge {
+    display: inline-block; background: var(--primary-light); color: var(--primary-dark);
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin: 0 4px 6px 0;
+    border: 1px solid #dfe4ff;
+  }
+  .badge.green { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+  .badge.amber { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+
+  /* ===== Hero ===== */
+  .hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
+    color: #fff; border-radius: 16px; padding: 48px 44px; margin: 24px auto 28px; max-width: 1280px;
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ""; position: absolute; right: -80px; top: -80px; width: 300px; height: 300px;
+    background: rgba(255,255,255,.08); border-radius: 50%;
+  }
+  .hero::before {
+    content: ""; position: absolute; right: 60px; bottom: -110px; width: 220px; height: 220px;
+    background: rgba(255,255,255,.06); border-radius: 50%;
+  }
+  .hero h1 { font-size: 30px; font-weight: 800; margin-bottom: 10px; position: relative; z-index: 1; }
+  .hero p { font-size: 15px; opacity: .92; max-width: 720px; position: relative; z-index: 1; }
+  .hero .meta { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 1; }
+  .hero .meta span {
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.25);
+    padding: 5px 14px; border-radius: 20px; font-size: 12.5px; backdrop-filter: blur(4px);
+  }
+  .hero .toc-mini {
+    margin-top: 22px; padding: 14px 18px; background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2); border-radius: 10px; font-size: 13px; position: relative; z-index: 1;
+  }
+  .hero .toc-mini b { color: #fff; }
+  .hero .toc-mini span { color: rgba(255,255,255,.85); }
+
+  /* ===== 3-col stat ===== */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    text-align: center; box-shadow: 0 1px 3px rgba(16,24,40,.04);
+  }
+  .stat .num { font-size: 26px; font-weight: 800; color: var(--primary); }
+  .stat .lbl { font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+
+  /* ===== Tree ===== */
+  pre.tree {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; font-size: 12.5px; line-height: 1.75; overflow-x: auto;
+    font-family: "JetBrains Mono", Consolas, monospace; color: #3b4256; margin: 14px 0 20px;
+  }
+  pre.tree .d { color: var(--primary-dark); font-weight: 600; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 980px) {
+    .sidebar { display: none; }
+    .layout { padding: 0 14px 60px; }
+    section.card { padding: 24px 20px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .hero { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>从零搭建一个全栈 CMS 内容管理系统</h1>
+  <p>这份教程基于真实项目整理：后端 Spring Boot 3 + JdbcTemplate（零 ORM）+ Spring Security + JWT 双 Token + RBAC，前端 React 18 + TypeScript + Ant Design 5，最后用 Docker Compose 部署。代码都能跑，照着搭一遍，一个前后端分离的后台系统就成型了。</p>
+  <div class="meta">
+    <span>后端：Java 17 · Spring Boot 3.2</span>
+    <span>前端：React 18 · TS 5 · Vite 5</span>
+    <span>数据：MySQL 8 · Redis 7</span>
+    <span>安全：JWT 双 Token · RBAC</span>
+    <span>部署：Docker Compose</span>
+  </div>
+  <div class="toc-mini">
+    <b>教程覆盖：</b>
+    <span>无 ORM 的分层架构 · 双 Token 认证与自动刷新 · 注解式权限校验 · AOP 操作日志 · Axios 拦截器封装 · 权限驱动菜单 · Docker 部署 · 实战踩坑记录</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-title">目录导航</div>
+    <a href="#sec-1">1. 项目总览</a>
+    <a href="#sec-2">2. 架构设计</a>
+    <a href="#sec-3">3. 数据库设计</a>
+    <a href="#sec-4">4. 后端从零搭建</a>
+    <a href="#sec-4-1" class="sub">4.1 工程初始化</a>
+    <a href="#sec-4-2" class="sub">4.2 统一响应与异常</a>
+    <a href="#sec-4-3" class="sub">4.3 JWT 双 Token</a>
+    <a href="#sec-4-4" class="sub">4.4 安全过滤链</a>
+    <a href="#sec-4-5" class="sub">4.5 四层业务开发</a>
+    <a href="#sec-4-6" class="sub">4.6 AOP 操作日志</a>
+    <a href="#sec-5">5. 前端从零搭建</a>
+    <a href="#sec-5-1" class="sub">5.1 工程初始化</a>
+    <a href="#sec-5-2" class="sub">5.2 Axios 封装</a>
+    <a href="#sec-5-3" class="sub">5.3 路由与权限</a>
+    <a href="#sec-5-4" class="sub">5.4 状态管理</a>
+    <a href="#sec-5-5" class="sub">5.5 页面开发范式</a>
+    <a href="#sec-6">6. 本地运行与部署</a>
+    <a href="#sec-7">7. 踩坑实录</a>
+    <a href="#sec-8">8. 学习路线</a>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+
+    <!-- ======== 1. 项目总览 ======== -->
+    <section class="card" id="sec-1">
+      <h2 class="sec"><span class="no">01</span>项目总览</h2>
+      <p class="sec-desc">先说明这个项目做什么、用什么技术，以及你能学到什么。</p>
+
+      <p>这是一个<strong>前后端分离的内容管理系统（CMS）</strong>：管理员管理用户、角色和菜单权限，编辑发布文章、管理分类和通知，系统自动记录操作日志和登录记录。后台系统常见的功能——认证、授权、CRUD、审计、看板、部署——在这里都能找到对应实现。</p>
+
+      <div class="stats">
+        <div class="stat"><div class="num">13</div><div class="lbl">数据库表</div></div>
+        <div class="stat"><div class="num">80+</div><div class="lbl">后端 Java 类</div></div>
+        <div class="stat"><div class="num">30+</div><div class="lbl">前端源文件</div></div>
+        <div class="stat"><div class="num">0</div><div class="lbl">ORM 框架（纯 JdbcTemplate）</div></div>
+      </div>
+
+      <h3>你能学到什么</h3>
+      <table>
+        <tr><th style="width:220px">能力点</th><th>具体收获</th></tr>
+        <tr><td>后端分层架构</td><td>Controller → Service → Repository → JdbcTemplate，每层职责清晰、可测试、可替换</td></tr>
+        <tr><td>Spring Security 6</td><td>SecurityFilterChain 配置、无状态会话、方法级授权 <code>@PreAuthorize</code></td></tr>
+        <tr><td>JWT 双 Token</td><td>Access Token 短期 + Refresh Token 长期，前端 401 自动刷新、请求队列并发处理</td></tr>
+        <tr><td>RBAC 权限模型</td><td>用户 → 角色 → 菜单（权限码）三张核心表 + 两张关联表，接口与按钮双重控制</td></tr>
+        <tr><td>AOP 切面编程</td><td>自定义注解 <code>@OperationLog</code> + 环绕通知，零侵入记录操作日志</td></tr>
+        <tr><td>前端工程化</td><td>Axios 拦截器封装、Zustand 状态管理、权限组件、动态菜单、列表页标准范式</td></tr>
+        <tr><td>部署交付</td><td>Dockerfile 多阶段构建 + docker-compose 编排 MySQL/Redis/后端/前端四容器</td></tr>
+      </table>
+
+      <h3>技术栈速览</h3>
+      <p>
+        <span class="badge">Java 17</span><span class="badge">Spring Boot 3.2.5</span><span class="badge">Spring Security 6</span>
+        <span class="badge">Spring JDBC / JdbcTemplate</span><span class="badge">MySQL 8</span><span class="badge">Redis 7</span>
+        <span class="badge">JWT (jjwt 0.12)</span><span class="badge">Knife4j 接口文档</span><span class="badge">Lombok</span>
+        <span class="badge green">React 18</span><span class="badge green">TypeScript 5</span><span class="badge green">Vite 5</span>
+        <span class="badge green">Ant Design 5</span><span class="badge green">Zustand</span><span class="badge green">Axios</span>
+        <span class="badge green">React Router 6</span><span class="badge green">ECharts</span><span class="badge green">Tailwind CSS</span>
+      </p>
+
+      <div class="callout info"><span class="t">为什么不用 MyBatis / JPA？</span>这是本项目的硬性约束。手写 JdbcTemplate 意味着 SQL、结果集映射、事务边界都自己控制，能真正理解数据访问层在做什么。以后再用 ORM，你会知道它帮你省了什么、什么时候该绕开。</div>
+    </section>
+
+    <!-- ======== 2. 架构设计 ======== -->
+    <section class="card" id="sec-2">
+      <h2 class="sec"><span class="no">02</span>架构设计</h2>
+      <p class="sec-desc">写代码之前，先看系统的组织方式、一次请求的完整链路、认证授权怎么串起来。</p>
+
+      <h3>2.1 后端分层架构</h3>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node">Controller<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">参数校验 · 路由</span></div>
+          <div class="arrow">→</div>
+          <div class="node">Service<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">业务逻辑 · 事务</span></div>
+          <div class="arrow">→</div>
+          <div class="node">Repository<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">SQL · 映射</span></div>
+          <div class="arrow">→</div>
+          <div class="node dark">JdbcTemplate</div>
+          <div class="arrow">→</div>
+          <div class="node warn">MySQL</div>
+        </div>
+        <div class="flow-label">依赖方向严格单向，禁止跨层调用（Controller 不能直接碰 Repository）</div>
+      </div>
+      <ul>
+        <li><strong>Controller</strong>：只做 HTTP 语义转换（DTO ←→ 请求），不做业务判断</li>
+        <li><strong>Service</strong>：业务规则、事务边界（<code>@Transactional</code>）、组装 VO</li>
+        <li><strong>Repository</strong>：只负责 SQL 与结果集映射，不感知 HTTP</li>
+        <li><strong>DTO / VO 分离</strong>：入参 DTO 和出参 VO 分开定义，接口契约稳定，不把实体直接暴露出去</li>
+      </ul>
+
+      <h3>2.2 一次请求的完整链路</h3>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node">浏览器<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">携带 Bearer Token</span></div>
+          <div class="arrow">→</div>
+          <div class="node warn">JwtAuthenticationFilter<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">解析校验 Token</span></div>
+          <div class="arrow">→</div>
+          <div class="node">SecurityContext<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">注入用户身份</span></div>
+          <div class="arrow">→</div>
+          <div class="node alt">@PreAuthorize<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">权限校验</span></div>
+          <div class="arrow">→</div>
+          <div class="node">Controller → Service → Repository</div>
+        </div>
+        <div class="flow-label">任意一环失败 → 全局异常处理器统一返回 ApiResponse 结构</div>
+      </div>
+
+      <h3>2.3 JWT 双 Token 认证模型</h3>
+      <p>双 Token 的原因：Access Token 有效期短（本项目 1 小时），就算泄漏损失也小；Refresh Token 有效期长（7 天），只用来换新的 Access Token。前端拦截器收到 401 后自动用 Refresh Token 续期，用户无感知。</p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node">登录成功</div>
+          <div class="arrow">→</div>
+          <div class="node">签发 Access(1h) + Refresh(7d)</div>
+          <div class="arrow">→</div>
+          <div class="node">前端存 localStorage</div>
+        </div>
+        <div class="arrow down">↓</div>
+        <div class="flow-row">
+          <div class="node">Access 过期 → 接口 401</div>
+          <div class="arrow">→</div>
+          <div class="node alt">POST /auth/refresh 换新</div>
+          <div class="arrow">→</div>
+          <div class="node">重放原请求</div>
+        </div>
+        <div class="arrow down">↓</div>
+        <div class="flow-row">
+          <div class="node warn">Refresh 也过期</div>
+          <div class="arrow">→</div>
+          <div class="node warn">清空 Token → 跳转登录页</div>
+        </div>
+      </div>
+
+      <h3>2.4 RBAC 权限模型</h3>
+      <p>三张核心表 + 两张关联表：<code>用户 → 用户角色 → 角色 → 角色菜单 → 菜单</code>。菜单表的 <code>type</code> 字段区分三种层级，权限码挂在按钮/接口上，前端后端各校验一次（纵深防御）。</p>
+      <div class="flow">
+        <div class="flow-row">
+          <div class="node">sys_user<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">用户</span></div>
+          <div class="arrow">→</div>
+          <div class="node">sys_user_role<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">N:M</span></div>
+          <div class="arrow">→</div>
+          <div class="node">sys_role<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">角色</span></div>
+          <div class="arrow">→</div>
+          <div class="node">sys_role_menu<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">N:M</span></div>
+          <div class="arrow">→</div>
+          <div class="node alt">sys_menu<br><span style="font-weight:400;font-size:12px;color:var(--text-3)">菜单/权限码</span></div>
+        </div>
+      </div>
+      <div class="callout tip"><span class="t">纵深防御：</span>按钮能不能显示由前端 <code>Permission</code> 组件决定（体验），接口能不能调用由后端 <code>@PreAuthorize</code> 决定（安全）。前端隐藏只是 UI，后端校验才是底线——因为别人可以直接 curl 你的接口。</div>
+    </section>
+
+    <!-- ======== 3. 数据库设计 ======== -->
+    <section class="card" id="sec-3">
+      <h2 class="sec"><span class="no">03</span>数据库设计</h2>
+      <p class="sec-desc">13 张表按领域分组：系统安全（RBAC）、内容管理、通知、审计日志。</p>
+
+      <h3>3.1 表清单</h3>
+      <table>
+        <tr><th>领域</th><th>表名</th><th>作用</th></tr>
+        <tr><td rowspan="5">系统安全</td><td><code>sys_user</code></td><td>用户：账号、密码（BCrypt）、昵称、状态</td></tr>
+        <tr><td><code>sys_role</code></td><td>角色：编码、名称、状态</td></tr>
+        <tr><td><code>sys_menu</code></td><td>菜单/权限：树形结构，type 区分 目录/菜单/按钮</td></tr>
+        <tr><td><code>sys_user_role</code></td><td>用户-角色 关联</td></tr>
+        <tr><td><code>sys_role_menu</code></td><td>角色-菜单 关联（决定用户能看什么、能做什么）</td></tr>
+        <tr><td rowspan="5">内容管理</td><td><code>cms_category</code></td><td>分类：树形结构（父子级）</td></tr>
+        <tr><td><code>cms_article</code></td><td>文章：标题、摘要、正文(Markdown)、封面、SEO、状态</td></tr>
+        <tr><td><code>cms_tag</code></td><td>标签</td></tr>
+        <tr><td><code>cms_article_tag</code></td><td>文章-标签 关联</td></tr>
+        <tr><td><code>sys_notice</code></td><td>通知公告：类型、状态、创建人</td></tr>
+        <tr><td rowspan="2">通知</td><td><code>sys_notice_user</code></td><td>通知-接收人 关联</td></tr>
+        <tr><td rowspan="2">审计</td><td><code>sys_login_log</code></td><td>登录日志：IP、浏览器、成功/失败</td></tr>
+        <tr><td><code>sys_operation_log</code></td><td>操作日志：操作人、方法、参数、耗时、IP</td></tr>
+      </table>
+
+      <h3>3.2 全表统一设计约定</h3>
+      <ul>
+        <li><strong>主键</strong>：自增 BIGINT <code>id</code></li>
+        <li><strong>时间</strong>：<code>created_at</code> 默认 CURRENT_TIMESTAMP，<code>updated_at</code> 自动更新</li>
+        <li><strong>逻辑删除</strong>：所有业务表带 <code>deleted TINYINT</code>，删除 = UPDATE 置 1，查询永远 <code>AND deleted = 0</code>。数据不物理消失，可恢复、可审计</li>
+        <li><strong>字符集</strong>：utf8mb4 + utf8mb4_unicode_ci（表情符号也能存）</li>
+        <li><strong>索引</strong>：外键字段建普通索引（如 <code>idx_category_id</code>），不做物理外键约束，避免锁与迁移成本</li>
+      </ul>
+
+      <h3>3.3 核心表：sys_menu（菜单 + 权限一体）</h3>
+      <div class="code-wrap">
+        <div class="code-head"><span>schema.sql</span><span class="lang">SQL</span></div>
+        <pre class="code"><code>CREATE TABLE sys_menu (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    parent_id   BIGINT       NOT NULL DEFAULT 0 COMMENT '父菜单ID, 0=根',
+    name        VARCHAR(64)  NOT NULL COMMENT '菜单名称',
+    type        VARCHAR(20)  NOT NULL COMMENT 'DIRECTORY目录/MENU菜单/BUTTON按钮',
+    path        VARCHAR(255) DEFAULT '' COMMENT '路由路径',
+    component   VARCHAR(255) DEFAULT '' COMMENT '前端组件',
+    permission  VARCHAR(128) DEFAULT '' COMMENT '权限标识, 如 article:update',
+    icon        VARCHAR(64)  DEFAULT '' COMMENT '图标',
+    sort        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+    status      TINYINT      NOT NULL DEFAULT 1 COMMENT '0禁用 1启用',
+    visible     TINYINT      NOT NULL DEFAULT 1 COMMENT '0隐藏 1显示',
+    deleted     TINYINT      NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY idx_parent_id (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜单权限表';</code></pre>
+      </div>
+      <div class="callout tip"><span class="t">设计亮点：</span>菜单和权限共用一张表。目录/菜单行用于生成前端侧边栏，按钮行（type=BUTTON）不渲染菜单、只提供 <code>permission</code> 权限码，登录后接口把整棵树的权限码拍平返回，前端据此控制按钮显隐，后端 <code>@PreAuthorize("hasAuthority('article:update')")</code> 做同名校验。</div>
+    </section>
+
+    <!-- ======== 4. 后端 ======== -->
+    <section class="card" id="sec-4">
+      <h2 class="sec"><span class="no">04</span>后端从零搭建</h2>
+      <p class="sec-desc">按依赖顺序推进：工程 → 基础设施 → 认证授权 → 业务模块 → 横切能力。</p>
+
+      <h3 id="sec-4-1">4.1 工程初始化</h3>
+      <p>用 Spring Initializr 生成基础工程（Java 17、Spring Boot 3.2.5），然后加入下面的依赖。注意：数据访问只用 <code>spring-boot-starter-jdbc</code>，<strong>不引入任何 ORM</strong>。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>backend/pom.xml（关键依赖）</span><span class="lang">XML</span></div>
+        <pre class="code"><code>&lt;!-- 核心 ---&gt;
+spring-boot-starter-web       <span class="tok-c">// Web</span>
+spring-boot-starter-jdbc      <span class="tok-c">// JdbcTemplate（不用 MyBatis/JPA）</span>
+spring-boot-starter-security  <span class="tok-c">// 安全框架</span>
+spring-boot-starter-data-redis <span class="tok-c">// Redis（refresh token / 缓存）</span>
+spring-boot-starter-validation <span class="tok-c">// Bean Validation 参数校验</span>
+spring-boot-starter-aop       <span class="tok-c">// AOP 操作日志</span>
+
+<span class="tok-c">// 数据库驱动</span>
+mysql-connector-j (runtime)
+
+<span class="tok-c">// JWT</span>
+jjwt-api / jjwt-impl / jjwt-jackson   <span class="tok-c">// 0.12.5</span>
+
+<span class="tok-c">// 接口文档</span>
+knife4j-openapi3-jakarta-spring-boot-starter <span class="tok-c">// 4.5.0</span>
+
+<span class="tok-c">// 开发效率</span>
+lombok (optional)</code></pre>
+      </div>
+      <div class="code-wrap">
+        <div class="code-head"><span>application.yml（关键配置）</span><span class="lang">YAML</span></div>
+        <pre class="code"><code>server:
+  port: 8080
+  servlet:
+    context-path: /api          <span class="tok-c"># 所有接口统一前缀 /api</span>
+
+jwt:
+  secret: ${JWT_SECRET:...}      <span class="tok-c"># 密钥，生产用环境变量覆盖</span>
+  access-token-expiration: 3600000     <span class="tok-c"># Access Token: 1 小时</span>
+  refresh-token-expiration: 604800000  <span class="tok-c"># Refresh Token: 7 天</span>
+  header: Authorization
+  prefix: "Bearer "</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">每个依赖解决什么问题？为什么是它？</span>
+        <p><code>spring-boot-starter-*</code> 是一组"开箱即用"的依赖集合——加一个 starter，Spring Boot 就自动装配好对应的组件，不用你手动配置。</p>
+        <ul>
+          <li><b>web</b>：内嵌 Tomcat + Spring MVC，提供 <code>@RestController</code> 等 HTTP 能力。没它，你的接口根本接收不到请求。</li>
+          <li><b>jdbc</b>：提供 <code>JdbcTemplate</code>。刻意<strong>不引入 MyBatis/JPA</strong>，因为本项目的核心学习目标就是搞懂数据访问底层：SQL 自己写、结果集自己映射、事务边界自己控制。</li>
+          <li><b>security</b>：认证授权框架。它是"过滤器链"架构——后面 4.4 会看到我们如何把 JWT 过滤器插进链条。</li>
+          <li><b>data-redis</b>：Redis 客户端。Refresh Token 本可以放 Redis 实现服务端吊销，本项目先用 JWT 自包含方案（7 天有效期），Redis 留给后续扩展。</li>
+          <li><b>validation</b>：参数校验。配合 <code>@Valid</code> + DTO 上的 <code>@NotBlank</code> 等注解，Controller 入口自动拦截非法参数，不用手写 if 判断。</li>
+          <li><b>aop</b>：面向切面编程。操作日志（4.6）靠它实现"零侵入"——业务代码不写一行日志逻辑。</li>
+        </ul>
+        <p>为什么 <code>mysql-connector-j</code> 是 <b>runtime</b> 作用域？因为它只在运行期被 JDBC 驱动加载，编译期代码里从不 import 它。</p>
+      </div>
+
+      <h3 id="sec-4-2">4.2 统一响应与全局异常</h3>
+      <p>所有接口返回同一结构 <code>{ code, message, data }</code>，前端拦截器只要认准 <code>code === 200</code> 即可，业务错误和系统错误处理路径完全统一。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>common/response/ApiResponse.java</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>public class ApiResponse&lt;T&gt; {
+    private int code;      <span class="tok-c">// 200 成功，其余为业务/系统错误码</span>
+    private String message;
+    private T data;
+
+    public static &lt;T&gt; ApiResponse&lt;T&gt; success(T data) {
+        return new ApiResponse&lt;&gt;(200, "操作成功", data);
+    }
+    public static &lt;T&gt; ApiResponse&lt;T&gt; error(ResultCode rc) {
+        return new ApiResponse&lt;&gt;(rc.getCode(), rc.getMessage(), null);
+    }
+}</code></pre>
+      </div>
+      <div class="code-wrap">
+        <div class="code-head"><span>common/exception/GlobalExceptionHandler.java</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    <span class="tok-c">// 业务异常：Service 层主动抛出，如"文章不存在"</span>
+    @ExceptionHandler(BusinessException.class)
+    public ApiResponse&lt;Void&gt; handleBusiness(BusinessException e) {
+        return ApiResponse.error(e.getResultCode());
+    }
+
+    <span class="tok-c">// 参数校验失败：@Valid 触发</span>
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ApiResponse&lt;Void&gt; handleValid(MethodArgumentNotValidException e) {
+        String msg = e.getBindingResult().getFieldErrors().stream()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return ApiResponse.error(ResultCode.PARAM_ERROR, msg);
+    }
+
+    <span class="tok-c">// 兜底：未知异常不把堆栈泄漏给前端</span>
+    @ExceptionHandler(Exception.class)
+    public ApiResponse&lt;Void&gt; handleUnknown(Exception e) {
+        log.error("Unknown error", e);
+        return ApiResponse.error(ResultCode.SYSTEM_ERROR);
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">@RestControllerAdvice 是什么？为什么它能"接住"所有异常？</span>
+        <p><code>@RestControllerAdvice</code> = <code>@ControllerAdvice</code> + <code>@ResponseBody</code> 的合体，作用是：<b>全局拦截 Controller 抛出的异常，统一转成 JSON 响应</b>。它是 Spring MVC 的"异常总出口"——任何接口抛异常，框架先看有没有匹配的 <code>@ExceptionHandler</code> 方法，有就用它兜住，没有才返回默认错误页（HTML 的 500 页面）。</p>
+        <p>三个方法的<strong>匹配优先级</strong>：Spring 按异常类型从具体到宽泛匹配。抛 <code>BusinessException</code> → 走第一个；<code>@Valid</code> 校验失败 → 走第二个；其他任何异常 → 走第三个兜底。</p>
+        <ul>
+          <li><b>@ExceptionHandler(BusinessException.class)</b>：<code>BusinessException</code> 是 Service 层主动抛的业务错误（如"文章不存在"），带明确的 ResultCode，直接翻译成对应 code/message。</li>
+          <li><b>@ExceptionHandler(MethodArgumentNotValidException.class)</b>：<code>@Valid</code> 校验失败时抛的异常类型。<code>getFieldErrors()</code> 能拿到<strong>所有</strong>校验失败的字段和提示，拼成一条可读的错误信息——这就是为什么参数错误能精确到"username: 不能为空"。</li>
+          <li><b>@ExceptionHandler(Exception.class)</b>：最后防线。打日志排查，但<strong>绝不让堆栈泄漏给前端</strong>——对外只返回"系统繁忙"，防止攻击者从报错信息反推系统结构。</li>
+        </ul>
+        <p>不写这个类的后果：任何一个未捕获异常都会返回 Spring 默认的 HTML 错误页，前端根本没法统一处理，报错信息还可能暴露内部细节。</p>
+      </div>
+
+      <h3 id="sec-4-3">4.3 JWT 双 Token 签发与解析</h3>
+      <p>用的是 jjwt 0.12 的链式 API。两个 Token 共用一套生成逻辑和密钥，只有 <code>type</code> claim 和过期时间不同，过滤器里靠这个区分 Access 和 Refresh。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>security/JwtTokenProvider.java（核心）</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@Component
+public class JwtTokenProvider {
+
+    @Value("${jwt.secret}") private String secret;
+    @Value("${jwt.access-token-expiration}") private long accessExp;
+    @Value("${jwt.refresh-token-expiration}") private long refreshExp;
+
+    private SecretKey key;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public String generateAccessToken(Long userId, String username) {
+        return generateToken(userId, username, accessExp, "ACCESS");
+    }
+
+    public String generateRefreshToken(Long userId, String username) {
+        return generateToken(userId, username, refreshExp, "REFRESH");
+    }
+
+    private String generateToken(Long userId, String username, long expiration, String type) {
+        Map&lt;String, Object&gt; claims = new HashMap&lt;&gt;();
+        claims.put("userId", userId);
+        claims.put("type", type);
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject(username)          <span class="tok-c">// 标准字段：用户名</span>
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(key)              <span class="tok-c">// HS 系列，密钥自动匹配算法</span>
+                .compact();
+    }
+
+    public Claims parseToken(String token) {
+        return Jwts.parser().verifyWith(key).build()
+                .parseSignedClaims(token).getPayload();
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">这个类上的三个注解分别是什么？</span>
+        <ul>
+          <li><b>@Component</b>：把当前类注册为 Spring 容器管理的 Bean（单例）。声明之后，其他类用构造器注入 <code>private final JwtTokenProvider jwtTokenProvider</code> 就能直接拿到实例，不需要自己 new。它和 <code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 功能等价，只是语义不同——那些是 @Component 的"带语义的别名"，后面 4.5 会看到。</li>
+          <li><b>@Value("${jwt.secret}")</b>：把 <code>application.yml</code> 里 <code>jwt.secret</code> 的值注入到这个字段。配置外置的好处：改密钥、改过期时间不用改代码，生产环境还能用环境变量覆盖（<code>${JWT_SECRET:默认值}</code> 的写法）。</li>
+          <li><b>@PostConstruct</b>：Spring 生命周期注解——Bean 构造完成、<strong>依赖注入完成后</strong>自动执行一次 <code>init()</code>。这里把字符串密钥转成 <code>SecretKey</code> 对象。为什么不在构造方法里做？因为 <code>@Value</code> 注入发生在构造之后，构造方法里读 <code>secret</code> 还是 null。</li>
+        </ul>
+        <p><b>为什么 key 只初始化一次？</b>JWT 签名/验签是高频操作，如果每次调用都重新算 key 就是浪费。单例 Bean + <code>@PostConstruct</code> 保证进程生命周期内只有一份 key。</p>
+        <p><b>为什么两个 Token 共用同一个密钥？</b>Access 和 Refresh 用同一套签发逻辑，只是 <code>type</code> claim（"ACCESS"/"REFRESH"）和过期时间不同。解析时先看 type 就知道它是哪种 Token，这在 4.4 的过滤器里是判断"是否允许自动刷新"的依据。共用密钥也简化了配置——一套 <code>jwt.secret</code> 就够了。</p>
+      </div>
+
+      <h3 id="sec-4-4">4.4 安全过滤链：无状态 + 过滤器鉴权</h3>
+      <p>无状态会话（<code>STATELESS</code>）意味着服务端不存 Session，每次请求都靠 JWT 自证身份。核心就两个文件：<code>SecurityConfig</code> 定义放行规则和过滤器位置；<code>JwtAuthenticationFilter</code> 在每个请求进来时解析 Token、把身份塞进 SecurityContext。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>config/SecurityConfig.java</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)   <span class="tok-c">// 开启 @PreAuthorize 注解</span>
+public class SecurityConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();     <span class="tok-c">// BCrypt 加盐哈希</span>
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(AbstractHttpConfigurer::disable)   <span class="tok-c">// 无状态 API，不需要 CSRF</span>
+            .sessionManagement(s -&gt; s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -&gt; auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/auth/login", "/auth/refresh").permitAll()
+                .requestMatchers("/doc.html", "/v3/api-docs/**").permitAll()
+                .anyRequest().authenticated()         <span class="tok-c">// 其余全部要登录</span>
+            )
+            .exceptionHandling(ex -&gt; ex
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)  <span class="tok-c">// 401</span>
+                .accessDeniedHandler(jwtAccessDeniedHandler))           <span class="tok-c">// 403</span>
+            .addFilterBefore(jwtAuthenticationFilter,
+                    UsernamePasswordAuthenticationFilter.class);        <span class="tok-c">// 插队</span>
+        return http.build();
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">SecurityConfig 上的三个注解 + @Bean 是什么？</span>
+        <ul>
+          <li><b>@Configuration</b>：告诉 Spring"这个类是配置类"，里面的 <code>@Bean</code> 方法会被执行并把返回值注册进容器。没有它，<code>filterChain</code> 方法根本不会被调用。</li>
+          <li><b>@EnableWebSecurity</b>：开启 Spring Security 的 Web 安全支持，加载它内置的一整条过滤器链（默认十几二十个过滤器：CorsFilter、CsrfFilter、AuthorizationFilter……）。我们的 JWT 过滤器就是插进这条链的。</li>
+          <li><b>@EnableMethodSecurity(prePostEnabled = true)</b>：开启方法级权限注解。开了它，<code>@PreAuthorize("hasAuthority('article:update')")</code> 才生效——这是 RBAC 在接口上落地的开关，忘写这个注解，所有 @PreAuthorize 都会静默失效（这是非常隐蔽的坑）。</li>
+          <li><b>@Bean</b>：把方法返回值注册为容器 Bean。<code>PasswordEncoder</code> 是 Security 认证流程要用到的密码校验器，<code>filterChain</code> 返回的 <code>SecurityFilterChain</code> 是整个安全配置的产物。</li>
+        </ul>
+        <span class="t">三行关键配置，为什么这么写？</span>
+        <ul>
+          <li><b>csrf disable</b>：CSRF 防护针对"基于 Cookie 的会话"——攻击者伪造表单让浏览器自动带上你的 Cookie。而本项目用 JWT，Token 存在 JS 变量里由前端手动放入 Header，攻击者无法伪造，所以 CSRF 没有意义，关掉。</li>
+          <li><b>STATELESS</b>：明确告诉 Security"服务端不存 Session，不创建、不使用 HttpSession"。每个请求都是独立的，身份全靠 JWT 自证。这才能支撑水平扩展——多个后端实例之间无需同步 Session。</li>
+          <li><b>addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)</b>：把自定义过滤器插到"用户名密码认证过滤器"<strong>之前</strong>。因为我们是无状态 JWT，不需要 UsernamePasswordAuthenticationFilter 去走表单登录流程——我们的过滤器先解析 Token，能解析出身份就直接放行，解析不出再交给后续逻辑（最终返回 401）。"插队"的位置决定了执行顺序。</li>
+        </ul>
+      </div>
+      <div class="callout info"><span class="t">@PreAuthorize 用法：</span>方法上加 <code>@PreAuthorize("hasAuthority('article:update')")</code>。权限字符串就是 sys_menu 表里按钮行的 permission 字段，登录时后端按角色把权限码查出来塞进用户的 authorities 里，两边对得上。这一行注解 = 接口级权限校验，是 RBAC 落地的最后一环。</div>
+
+      <h3 id="sec-4-5">4.5 业务模块：标准四层开发范式</h3>
+      <p>用户/角色/菜单/分类/文章/通知这些模块都是同一套四层结构。下面以文章为例，走完一个完整的 CRUD，其他模块照搬即可。</p>
+
+      <h4>① Repository：纯 SQL，手写映射</h4>
+      <div class="code-wrap">
+        <div class="code-head"><span>article/repository/ArticleRepository.java</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@Repository
+public class ArticleRepository {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    <span class="tok-c">// RowMapper：把 ResultSet 一行映射为实体（也可用 BeanPropertyRowMapper，这里手写更可控）</span>
+    public static final RowMapper&lt;Article&gt; MAPPER = (rs, rowNum) -&gt; {
+        Article a = new Article();
+        a.setId(rs.getLong("id"));
+        a.setTitle(rs.getString("title"));
+        <span class="tok-c">// ... 逐字段映射</span>
+        return a;
+    };
+
+    public Optional&lt;Article&gt; findById(Long id) {
+        String sql = "SELECT ... FROM cms_article WHERE id = ? AND deleted = 0";
+        List&lt;Article&gt; list = jdbcTemplate.query(sql, MAPPER, id);
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+    }
+
+    <span class="tok-c">// 新增：GeneratedKeyHolder 拿回自增主键</span>
+    public Long insert(Article article) {
+        KeyHolder kh = new GeneratedKeyHolder();
+        jdbcTemplate.update(conn -&gt; {
+            PreparedStatement ps = conn.prepareStatement(INSERT_SQL,
+                    Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, article.getTitle());
+            <span class="tok-c">// ... 注意：可空字段做 null 兜底，否则 NOT NULL 列直接报错</span>
+            ps.setString(4, article.getCover() != null ? article.getCover() : "");
+            return ps;
+        }, kh);
+        return kh.getKey().longValue();
+    }
+
+    <span class="tok-c">// 更新：同样对可空字段做 null -> "" 兜底</span>
+    public int update(Article article) {
+        return jdbcTemplate.update(UPDATE_SQL,
+                article.getTitle(),
+                article.getSummary()  != null ? article.getSummary()  : "",
+                article.getContent()  != null ? article.getContent()  : "",
+                article.getCover()    != null ? article.getCover()    : "",
+                article.getCategoryId() != null ? article.getCategoryId() : 0,
+                article.getSeoTitle() != null ? article.getSeoTitle() : "",
+                article.getSeoDescription() != null ? article.getSeoDescription() : "",
+                article.getId());
+    }
+
+    <span class="tok-c">// 逻辑删除：deleted = 1</span>
+    public int softDelete(Long id) {
+        return jdbcTemplate.update(
+            "UPDATE cms_article SET deleted = 1, updated_at = NOW() WHERE id = ?", id);
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">@Repository 是什么？为什么要它？</span>
+        <p><code>@Repository</code> 是 Spring 给"数据访问层"的专用注解，功能上等价于 <code>@Component</code>，但多一层含义：它让 Spring 把 <code>JdbcTemplate</code> 抛出的 SQL 异常<strong>自动翻译成 Spring 的 DataAccessException 体系</strong>（统一异常处理时更好接），并且语义上告诉读代码的人"这是数据层"。</p>
+        <p><b>为什么 Repository 里全是手写 SQL + 手写 RowMapper？</b>这正是项目"零 ORM"的核心。JdbcTemplate 只做三件事：准备连接、执行 SQL、按 RowMapper 映射结果。每一步都透明可控：</p>
+        <ul>
+          <li><code>jdbcTemplate.query(sql, MAPPER, args)</code> —— <code>?</code> 占位符由参数填充，天然防 SQL 注入（PreparedStatement 机制），永远不要用字符串拼接 SQL。</li>
+          <li><b>RowMapper</b>：<code>ResultSet</code> 的每一行调一次，手动把列值 set 进实体。字段名对应关系完全由你掌控，不怕数据库改名、字段增减。</li>
+          <li><b>Optional&lt;Article&gt; 返回值</b>：强迫调用方处理"查不到"的情况，避免返回 null 后 NPE。配合 <code>orElseThrow</code> 让"数据不存在"的语义非常明确。</li>
+          <li><b>GeneratedKeyHolder</b>：MySQL 自增主键在执行 insert 后不会自动回填到实体里，需要 <code>RETURN_GENERATED_KEYS</code> 让驱动把生成的主键带回来。这是手写 SQL 最容易忽略的细节——忘了它，新增后你就拿不到新记录的 id。</li>
+          <li><b>null 兜底</b>（<code>cover != null ? cover : ""</code>）：数据库列是 NOT NULL，而前端/调用方可能不传可选字段。insert 和 update 都要兜底，否则直接报 <code>Column 'cover' cannot be null</code>——这是本项目的真实踩坑（见第 7 章）。</li>
+        </ul>
+      </div>
+
+      <h4>② Service：业务规则 + 事务 + 组装 VO</h4>
+      <div class="code-wrap">
+        <div class="code-head"><span>article/service/ArticleService.java（结构）</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@Service
+@RequiredArgsConstructor
+public class ArticleService {
+
+    private final ArticleRepository articleRepository;
+    private final CategoryRepository categoryRepository;
+
+    <span class="tok-c">// 分页：Repository 只查一页，Service 补全分类名等展示字段</span>
+    public PageResult&lt;ArticleVO&gt; getPage(String keyword, Long categoryId,
+                                          String status, int page, int pageSize) {
+        int offset = (page - 1) * pageSize;
+        List&lt;Article&gt; list = articleRepository.findPage(keyword, categoryId, status, offset, pageSize);
+        long total = articleRepository.count(keyword, categoryId, status);
+        return PageResult.of(list.stream().map(a -&gt; toVO(a)).toList(),
+                total, page, pageSize);
+    }
+
+    @Transactional                    <span class="tok-c">// 写操作挂事务</span>
+    public Long create(ArticleCreateDTO dto) {
+        Article article = new Article();
+        <span class="tok-c">// DTO -> Entity 手工映射（不装 MapStruct，直白可控）</span>
+        article.setTitle(dto.getTitle());
+        article.setStatus(dto.getStatus() != null ? dto.getStatus() : "DRAFT");
+        <span class="tok-c">// 从 SecurityContext 拿当前登录人，自动填充作者</span>
+        Long userId = SecurityUtils.getCurrentUserId();
+        article.setAuthorId(userId);
+        return articleRepository.insert(article);
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">@Service / @RequiredArgsConstructor / @Transactional 分别是什么？</span>
+        <ul>
+          <li><b>@Service</b>：业务层注解（@Component 的语义别名）。Spring 扫描到它就会实例化并放进容器。Controller 通过构造器注入拿到 Service 实例。</li>
+          <li><b>@RequiredArgsConstructor</b>：Lombok 注解，为所有 <code>final</code> 字段自动生成构造器。配 <code>private final ArticleRepository articleRepository</code>，Spring 就能"构造器注入"依赖——好处是依赖关系不可变、强制在创建时提供，也方便单元测试。这是 Spring 官方推荐的注入方式（对比字段上 @Autowired 的写法，后者反射注入、测试麻烦）。</li>
+          <li><b>@Transactional</b>：声明式事务。方法里所有数据库操作（可能多次 update/insert）要么全部成功提交、要么全部回滚。比如"创建文章 + 更新分类计数"两个操作，第二个失败时第一个也会回滚，数据不会半途而废。<code>@Transactional</code> 标注在 public 方法上，Spring 用 AOP 在方法前后自动开启/提交/回滚事务，业务代码里没有一行事务代码。</li>
+        </ul>
+        <p><b>为什么 Service 里做"DTO → Entity"手工映射？</b>Controller 收到的是前端传来的 DTO（可能缺字段、可能带不该传的字段），Repository 需要的是 Entity。手工逐字段 set 虽然啰嗦，但<strong>字段流转完全透明</strong>：哪些字段允许客户端传、哪些字段由服务端自己填（比如 authorId 从登录态拿，绝不信前端传的），一眼就能看出来。装 MapStruct 之类的映射库，代码省了但流程变黑盒，不符合本项目"直白可控"的原则。</p>
+        <p><b>SecurityUtils.getCurrentUserId() 从哪拿人？</b>认证过滤器把登录用户塞进了 <code>SecurityContext</code>（线程本地），这里取出来填充作者。这样作者信息永远来自可信的登录态，而不是请求参数。</p>
+      </div>
+
+      <h4>③ Controller：薄薄的 HTTP 层</h4>
+      <div class="code-wrap">
+        <div class="code-head"><span>article/controller/ArticleController.java（结构）</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@RestController
+@RequestMapping("/articles")
+@RequiredArgsConstructor
+public class ArticleController {
+
+    private final ArticleService articleService;
+
+    <span class="tok-c">// 权限码 = 按钮级控制；编辑、发布、删除各自独立</span>
+    @PreAuthorize("hasAuthority('article:update')")
+    @PutMapping("/{id}")
+    @OperationLog("编辑文章")
+    public ApiResponse&lt;Void&gt; update(@PathVariable Long id,
+                                     @Valid @RequestBody ArticleUpdateDTO dto) {
+        dto.setId(id);
+        articleService.update(dto);
+        return ApiResponse.success(null);
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">Controller 上的每个注解，逐个拆开讲</span>
+        <ul>
+          <li><b>@RestController</b> = <code>@Controller</code> + <code>@ResponseBody</code>。声明"这是个接收 HTTP 请求的类"，并且方法返回值<strong>直接序列化成 JSON 写进响应体</strong>（不经过视图渲染）。所以 return <code>ApiResponse.success(null)</code> 前端收到的就是 <code>{"code":200,"message":"操作成功","data":null}</code>。</li>
+          <li><b>@RequestMapping("/articles")</b>：类级别路径前缀。类里所有方法的 URL 都拼在它后面，比如下面的 <code>@PutMapping("/{id}")</code> 完整路径就是 <code>/api/articles/{id}</code>（/api 是 context-path 加的）。统一前缀 + 类级路由，URL 结构一目了然。</li>
+          <li><b>@PreAuthorize("hasAuthority('article:update')")</b>：方法级权限校验。执行前检查当前登录用户的 authorities 里有没有 <code>article:update</code> 这个权限码，没有就抛 403。<strong>注意：这行注解是后端真正的权限防线</strong>——前端按钮隐藏只是体验，接口级校验才是安全边界，绕过前端直接调接口也会被拦。</li>
+          <li><b>@PutMapping("/{id}")</b>：声明这是一个 PUT 请求。<code>{id}</code> 是路径变量，由 <code>@PathVariable Long id</code> 绑定——URL 里 /articles/5 中的 5 自动变成 id 参数。</li>
+          <li><b>@OperationLog("编辑文章")</b>：本项目自定义注解（第 4.6 节讲），切面自动记操作日志。注解名后的字符串就是日志里的操作描述。</li>
+          <li><b>@Valid</b>：触发 DTO 上的 Bean Validation 校验（如 <code>@NotBlank</code>、<code>@Size</code>）。校验失败抛 <code>MethodArgumentNotValidException</code>，被 4.2 的全局异常处理器接住。</li>
+          <li><b>@RequestBody</b>：把请求体里的 JSON 反序列化成 DTO。没有它，Spring 不知道从哪取参数——<code>@RequestBody</code> 对应"JSON 体"，<code>@PathVariable</code> 对应"URL 路径"，<code>@RequestParam</code> 对应"查询字符串"，三者要分清。</li>
+        </ul>
+        <p><b>为什么 Controller 这么"薄"？</b>它只做三件事：接收参数、调 Service、包响应。业务规则（比如"状态 DRAFT 才能删除"）一律放 Service，这样 Controller 可以轻松替换（比如将来加个 RPC 入口），业务逻辑不需要动。</p>
+      </div>
+      <div class="callout warn"><span class="t">为什么更新要走"先查后改"？</span>Service 里 <code>update()</code> 第一行先 <code>findById</code>，文章不存在直接抛业务异常。这保证幂等语义：更新一个不存在的 id 得到明确错误，而不是静默影响 0 行。</div>
+
+      <h4>④ 本项目的 Spring 注解速查表（全项目通用）</h4>
+      <p>把上面几节出现的注解汇总成一张表。读代码时遇到任何一个，回来查这张表就够了。</p>
+      <table class="anno-table">
+        <tr><th>注解</th><th>作用</th><th>为什么需要 / 不写会怎样</th></tr>
+        <tr><td>@Component</td><td>注册为 Spring 容器管理的 Bean（通用）</td><td>不写容器里就没有这个对象，注入时直接报 NoSuchBeanDefinitionException</td></tr>
+        <tr><td>@Service</td><td>@Component 的业务层语义别名</td><td>功能相同，但标注业务层让架构分层可读</td></tr>
+        <tr><td>@Repository</td><td>@Component 的数据层语义别名，SQL 异常自动翻译</td><td>数据层异常翻译成 DataAccessException，全局异常才好统一接住</td></tr>
+        <tr><td>@RestController</td><td>@Controller + @ResponseBody，返回 JSON</td><td>不写 @ResponseBody，返回值会被当成视图名去找模板，报 404</td></tr>
+        <tr><td>@Configuration</td><td>声明配置类，@Bean 方法生效</td><td>配置类不注册，整个 Security 配置全部失效</td></tr>
+        <tr><td>@Bean</td><td>把方法返回值注册进容器</td><td>PasswordEncoder / SecurityFilterChain 等第三方对象无法被注入使用</td></tr>
+        <tr><td>@Value("${...}")</td><td>把 yml 配置注入字段</td><td>配置硬编码进代码，改密钥/过期时间要重新编译</td></tr>
+        <tr><td>@PostConstruct</td><td>依赖注入完成后执行一次初始化</td><td>构造方法里读注入字段是 null，初始化时机错了</td></tr>
+        <tr><td>@RequiredArgsConstructor</td><td>(Lombok) 为 final 字段生成构造器</td><td>配合构造器注入，依赖关系不可变、可测试</td></tr>
+        <tr><td>@Transactional</td><td>方法级声明式事务，失败回滚</td><td>多步写操作中途失败会产生脏数据（半提交）</td></tr>
+        <tr><td>@PreAuthorize</td><td>方法执行前校验权限表达式</td><td>需要 @EnableMethodSecurity 开启；否则静默失效，接口裸奔</td></tr>
+        <tr><td>@RestControllerAdvice</td><td>全局异常处理器</td><td>异常返回默认 HTML 错误页，前端无法统一处理</td></tr>
+        <tr><td>@ExceptionHandler</td><td>指定处理的异常类型</td><td>按类型匹配，从具体到宽泛，最后一个兜底</td></tr>
+        <tr><td>@RequestMapping</td><td>类/方法级 URL 映射（全方法）</td><td>没有它，请求找不到处理方法，报 404</td></tr>
+        <tr><td>@GetMapping / @PostMapping / @PutMapping / @DeleteMapping</td><td>限定 HTTP 方法的 URL 映射</td><td>不加方法限定，同 URL 的 GET/POST 会冲突或语义混乱</td></tr>
+        <tr><td>@PathVariable</td><td>绑定 URL 路径变量（/articles/{id}）</td><td>路径里的 id 取不到，参数一直是 null</td></tr>
+        <tr><td>@RequestBody</td><td>JSON 请求体反序列化为 DTO</td><td>Spring 不知道该从哪取参数，直接 400</td></tr>
+        <tr><td>@Valid</td><td>触发 DTO 字段校验</td><td>校验注解（@NotBlank 等）不会自动生效，非法参数直达业务层</td></tr>
+        <tr><td>@Aspect + @Around</td><td>声明切面 + 环绕通知</td><td>操作日志无从拦截，只能在每个方法里手写日志代码</td></tr>
+        <tr><td>@Slf4j</td><td>(Lombok) 生成 log 字段</td><td>手动声明 Logger 实例，样板代码</td></tr>
+      </table>
+
+      <h3 id="sec-4-6">4.6 AOP 操作日志：注解 + 切面，零侵入</h3>
+      <p>不想在每个方法里手写记日志的代码，就用注解声明、切面统一处理。Controller 方法上加一行 <code>@OperationLog("编辑文章")</code>，环绕通知自动把操作人、方法、参数、耗时、IP 写进 <code>sys_operation_log</code>。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>log/aspect/OperationLogAspect.java（核心）</span><span class="lang">JAVA</span></div>
+        <pre class="code"><code>@Aspect
+@Component
+public class OperationLogAspect {
+
+    private final LogRepository logRepository;
+    private final ObjectMapper objectMapper;
+
+    <span class="tok-c">// 拦截所有标了 @OperationLog 的方法</span>
+    @Around("@annotation(operationLog)")
+    public Object around(ProceedingJoinPoint pjp, OperationLog operationLog) throws Throwable {
+        long start = System.currentTimeMillis();
+        Object result = pjp.proceed();            <span class="tok-c">// 先执行业务</span>
+        long cost = System.currentTimeMillis() - start;
+
+        try {
+            saveLog(pjp, operationLog, cost);
+        } catch (Exception e) {
+            log.warn("保存操作日志失败: {}", e.getMessage());  <span class="tok-c">// 日志失败不影响主流程</span>
+        }
+        return result;
+    }
+
+    private void saveLog(ProceedingJoinPoint pjp, OperationLog op, long cost) {
+        HttpServletRequest request = ((ServletRequestAttributes)
+                RequestContextHolder.getRequestAttributes()).getRequest();
+        MethodSignature sig = (MethodSignature) pjp.getSignature();
+
+        <span class="tok-c">// 参数序列化为 JSON，超长截断；过滤掉 request/MultipartFile</span>
+        String params = buildParams(pjp, sig);
+
+        logRepository.insertOperationLog(
+                SecurityUtils.getCurrentUserId(),
+                SecurityUtils.getCurrentUsername(),
+                request.getMethod(),
+                request.getRequestURI(),
+                params,
+                op.value(),
+                getClientIp(request),
+                cost);
+    }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">@Aspect / @Around 是什么？AOP 为什么能"零侵入"记日志？</span>
+        <p><b>@Aspect</b>：声明这个类是一个切面。切面 = "在哪些方法上（切入点）执行什么逻辑（通知）" 的组合。</p>
+        <p><b>@Around("@annotation(operationLog)")</b>：环绕通知，切入点表达式意思是——<strong>拦截所有标注了 @OperationLog 注解的方法</strong>。方法执行前进入 around()，<code>pjp.proceed()</code> 是"放行，真正执行业务方法"，业务返回后再继续执行日志保存。这就是"环绕"：前后都能插入代码。</p>
+        <p>关键设计：</p>
+        <ul>
+          <li><b>切入点用注解而不是包名/方法名</b>：精准——只有主动标了 @OperationLog 的方法才记日志，不想记的不受影响。</li>
+          <li><b>try-catch 包住日志保存</b>：日志写入失败只打 warn，<strong>绝不影响业务本身成功返回</strong>。记日志是"锦上添花"，不能因为日志表出问题导致业务报错。</li>
+          <li><b>pjp.proceed() 之后再记日志</b>：这样能拿到真实耗时（cost），也能拿到业务执行结果。如果是失败场景还能扩展记录异常信息。</li>
+          <li><b>RequestContextHolder 拿请求</b>：切面方法没有 request 参数，通过 Spring 的线程本地拿到当前请求对象，取 IP、取 URI。</li>
+        </ul>
+        <p>如果不做 AOP：每个 Controller 方法里都要手写"取用户、拼参数、调 insert 日志"，几十个方法重复几十遍，改一个字段要全局改动。AOP 把"横切逻辑"从业务代码里抽走，业务方法保持干净——这就是"零侵入"。</p>
+      </div>
+    </section>
+
+    <!-- ======== 5. 前端 ======== -->
+    <section class="card" id="sec-5">
+      <h2 class="sec"><span class="no">05</span>前端从零搭建</h2>
+      <p class="sec-desc">React 18 + TS + Vite + Ant Design 5，重点讲透三个工程化环节：请求封装、权限体系、页面范式。</p>
+
+      <h3 id="sec-5-1">5.1 工程初始化</h3>
+      <div class="code-wrap">
+        <div class="code-head"><span>初始化命令 + 目录结构</span><span class="lang">BASH</span></div>
+        <pre class="code"><code>npm create vite@latest frontend -- --template react-ts
+npm i antd @ant-design/icons axios react-router-dom zustand echarts echarts-for-react dayjs
+npm i -D tailwindcss autoprefixer postcss
+
+<span class="tok-c">// src 目录结构（按职责分包）</span>
+src/
+  api/          <span class="tok-c">// 每个后端的接口封装</span>
+  components/   <span class="tok-c">// 通用组件（Permission 权限组件等）</span>
+  layouts/      <span class="tok-c">// MainLayout 主框架</span>
+  pages/        <span class="tok-c">// 页面（login/dashboard/user/role/...）</span>
+  router/       <span class="tok-c">// 路由配置 + 守卫</span>
+  stores/       <span class="tok-c">// Zustand 全局状态</span>
+  types/        <span class="tok-c">// 与后端 DTO/VO 对齐的 TS 类型</span>
+  utils/        <span class="tok-c">// request.ts Axios 封装</span></code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">目录为什么按"职责"分包，而不是按页面分包？</span>
+        <p>后台系统的通用能力（请求、路由、状态、类型）是<strong>跨页面复用</strong>的。按职责分包后：</p>
+        <ul>
+          <li><b>api/</b> 单独放接口调用：页面只 import <code>articleApi.getList()</code>，不关心 URL、参数拼装。后端改接口只动一个文件。</li>
+          <li><b>types/</b> 与后端 DTO/VO 对齐：<code>ArticleVO</code> 的字段和 Java 的 VO 一一对应。TypeScript 在编译期就能抓住字段名拼写错误——这正是 TS 的价值，接口对接零运行时事故。</li>
+          <li><b>stores/</b> 全局状态集中管理：用户信息、权限码、菜单树是"任何页面都可能用到"的全局数据，放 Zustand store，谁用谁订阅。</li>
+          <li><b>utils/request.ts</b> 只有一个实例：全站共用一个 Axios 实例，拦截器（Token 注入、401 刷新）只写一份，所有请求自动生效。</li>
+        </ul>
+        <p>这样分，加新页面时只需在 <b>pages/</b> 加一个文件夹、在 <b>router/</b> 加一行路由，其余目录几乎不动。</p>
+      </div>
+
+      <h3 id="sec-5-2">5.2 Axios 封装：Token 注入 + 401 自动刷新</h3>
+      <p>这个文件承担三件事：请求前自动带 Token；响应统一按 <code>code</code> 解包；遇到 401 用 Refresh Token 换新并重放请求。其中有个细节值得注意——<strong>并发去重</strong>：多个请求同时 401 时，只发一次刷新请求，其他的排队等新 Token。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>utils/request.ts（核心）</span><span class="lang">TS</span></div>
+        <pre class="code"><code><span class="tok-k">const</span> request = axios.create({
+  baseURL: <span class="tok-s">'/api'</span>,          <span class="tok-c">// 开发走 Vite proxy，生产走 Nginx</span>
+  timeout: 15000,
+})
+
+<span class="tok-c">// 请求拦截器：自动带 Token</span>
+request.interceptors.request.use(<span class="tok-k">config</span> =&gt; {
+  <span class="tok-k">const</span> token = getToken()
+  <span class="tok-k">if</span> (token) config.headers.Authorization = <span class="tok-s">`Bearer ${token}`</span>
+  <span class="tok-k">return</span> config
+})
+
+<span class="tok-k">let</span> isRefreshing = <span class="tok-k">false</span>                 <span class="tok-c">// 刷新互斥锁</span>
+<span class="tok-k">let</span> pendingQueue: <span class="tok-k">Array</span>&lt;<span class="tok-k">() =&gt; void</span>&gt; = []  <span class="tok-c">// 等待重放的请求</span>
+
+request.interceptors.response.use(
+  <span class="tok-k">res</span> =&gt; {
+    <span class="tok-k">const</span> data = res.data <span class="tok-k">as</span> ApiResponse
+    <span class="tok-k">if</span> (data.code === 200) <span class="tok-k">return</span> res
+    message.error(data.message || <span class="tok-s">'请求失败'</span>)
+    <span class="tok-k">return</span> Promise.reject(<span class="tok-k">new</span> Error(data.message))
+  },
+  <span class="tok-k">async</span> (error) =&gt; {
+    <span class="tok-k">const</span> original = error.config
+    <span class="tok-k">if</span> (error.response?.status === 401 &amp;&amp; !original._retry) {
+      <span class="tok-k">if</span> (isRefreshing) {
+        <span class="tok-c">// 已有刷新在飞：排队等新 Token，然后重放</span>
+        <span class="tok-k">return</span> <span class="tok-k">new</span> Promise(resolve =&gt; {
+          pendingQueue.push(<span class="tok-k">()</span> =&gt; {
+            original.headers.Authorization = <span class="tok-s">`Bearer ${getToken()}`</span>
+            resolve(request(original))
+          })
+        })
+      }
+
+      original._retry = <span class="tok-k">true</span>
+      isRefreshing = <span class="tok-k">true</span>
+
+      <span class="tok-k">try</span> {
+        <span class="tok-k">const</span> res = <span class="tok-k">await</span> axios.post(<span class="tok-s">'/api/auth/refresh'</span>,
+          { refreshToken: getRefreshToken() })
+        <span class="tok-k">if</span> (res.data.code === 200) {
+          setTokens(res.data.data.accessToken, res.data.data.refreshToken)
+          pendingQueue.forEach(cb =&gt; cb())   <span class="tok-c">// 放行排队的请求</span>
+          pendingQueue = []
+          <span class="tok-k">return</span> request(original)
+        }
+        <span class="tok-k">throw</span> <span class="tok-k">new</span> Error(<span class="tok-s">'Refresh failed'</span>)
+      } <span class="tok-k">catch</span> {
+        clearTokens()                        <span class="tok-c">// 刷新失败：清空，回登录页</span>
+        window.location.href = <span class="tok-s">'/login'</span>
+      } <span class="tok-k">finally</span> {
+        isRefreshing = <span class="tok-k">false</span>
+      }
+    }
+    <span class="tok-k">return</span> Promise.reject(error)
+  },
+)</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">拦截器是什么？这个文件的设计思路</span>
+        <p><b>请求拦截器（request.use）</b>：每个请求<strong>发出前</strong>都会先经过它。这里做的唯一一件事是"自动带上 Token"——业务代码里永远不用手动加 Header，登录态统一在这里处理。</p>
+        <p><b>响应拦截器（response.use）</b>：每个响应<strong>返回前</strong>先经过它，做两件事：</p>
+        <ul>
+          <li>按 <code>code</code> 解包：<code>code === 200</code> 直接放行，业务层拿到的就是 <code>res.data.data</code>（真正的数据）；其他 code 统一弹错误提示并 reject。业务代码里不用写任何 if (res.code !== 200) 的重复判断。</li>
+          <li>401 处理：Token 过期时后端返回 401。这里自动用 Refresh Token 换新，然后<strong>重放原请求</strong>——用户无感知。</li>
+        </ul>
+        <p><b>为什么需要"并发去重"（isRefreshing + pendingQueue）？</b>页面同时发出 5 个请求，Access Token 恰好全过期——5 个请求会同时收到 401。如果不加锁，就会同时发出 5 个 refresh 请求，浪费且可能冲突。正确做法：<strong>只让第一个 401 去刷新</strong>（isRefreshing 置 true），其余 4 个把自己的"重放函数"推进 pendingQueue 排队；刷新成功后统一放行，用新 Token 重放。这是双 Token 方案在真实项目里的标准写法。</p>
+        <p><b>刷新也失败怎么办？</b>说明 Refresh Token 也失效了（比如用户被踢下线、Token 被吊销），清空本地 Token 跳回登录页——这是唯一需要用户重新登录的场景。</p>
+      </div>
+
+      <h3 id="sec-5-3">5.3 路由守卫 + 权限组件：前后端一致的权限模型</h3>
+      <p>路由层用 <code>ProtectedRoute</code> 判断有没有 Token（没登录 → 踢到 /login）；页面内按钮用 <code>Permission</code> 组件判断权限码。权限码来自登录接口返回的 <code>permissions</code> 数组，超级管理员有通配符 <code>*</code>。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>router/index.tsx（守卫核心）</span><span class="lang">TSX</span></div>
+        <pre class="code"><code><span class="tok-k">function</span> ProtectedRoute({ children }: { children: React.ReactNode }) {
+  <span class="tok-k">const</span> token = localStorage.getItem(<span class="tok-s">'cms_access_token'</span>)
+  <span class="tok-k">if</span> (!token) <span class="tok-k">return</span> &lt;Navigate to=<span class="tok-s">"/login"</span> replace /&gt;
+  <span class="tok-k">return</span> &lt;&gt;{children}&lt;/&gt;
+}
+
+<span class="tok-k">export default function</span> AppRouter() {
+  <span class="tok-k">return</span> (
+    &lt;Routes&gt;
+      &lt;Route path=<span class="tok-s">"/login"</span> element={&lt;Login /&gt;} /&gt;
+      &lt;Route path=<span class="tok-s">"/"</span> element={
+        &lt;ProtectedRoute&gt;&lt;MainLayout /&gt;&lt;/ProtectedRoute&gt;
+      }&gt;
+        &lt;Route index element={&lt;Navigate to=<span class="tok-s">"/dashboard"</span> replace /&gt;} /&gt;
+        &lt;Route path=<span class="tok-s">"system/user"</span> element={&lt;UserList /&gt;} /&gt;
+        <span class="tok-c">// ... role / menu / category / article / notice / logs</span>
+      &lt;/Route&gt;
+    &lt;/Routes&gt;
+  )
+}</code></pre>
+      </div>
+      <div class="code-wrap">
+        <div class="code-head"><span>components/Permission.tsx（按钮级）</span><span class="lang">TSX</span></div>
+        <pre class="code"><code><span class="tok-k">export default function</span> Permission({ permission, children, fallback = null }:
+  { permission: string; children: ReactNode; fallback?: ReactNode }) {
+
+  <span class="tok-k">const</span> hasPermission = useAuthStore(s =&gt; s.hasPermission)
+  <span class="tok-k">if</span> (!hasPermission(permission)) <span class="tok-k">return</span> &lt;&gt;{fallback}&lt;/&gt;
+  <span class="tok-k">return</span> &lt;&gt;{children}&lt;/&gt;
+}
+
+<span class="tok-c">// 用法：没有 article:update 权限的人，根本看不到"编辑"按钮</span>
+<span class="tok-c">// &lt;Permission permission="article:update"&gt;</span>
+<span class="tok-c">//   &lt;Button onClick={handleEdit}&gt;编辑&lt;/Button&gt;</span>
+<span class="tok-c">// &lt;/Permission&gt;</span></code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">前端为什么也要做权限？和后端权限什么关系？</span>
+        <p>权限有<strong>两层防线</strong>，缺一不可：</p>
+        <ul>
+          <li><b>后端（真正的安全边界）</b>：<code>@PreAuthorize</code> 在接口层校验权限码。绕过前端直接 curl 接口，没有权限照样 403。安全永远以后端为准。</li>
+          <li><b>前端（体验层）</b>：没权限的菜单不显示、没权限的按钮不渲染。否则用户能看到"编辑"按钮，点一下弹"无权限"，体验极差。</li>
+        </ul>
+        <p>所以前端权限是"藏入口"，后端权限是"拦请求"，两层配合才完整。</p>
+        <span class="t">几个设计细节，为什么这么写？</span>
+        <ul>
+          <li><b>Token 放 localStorage</b>：刷新页面不丢登录态。相比 Cookie，JS 可读可写，能手动放进 Authorization Header。代价是有 XSS 风险时可能被偷——生产项目可升级为 httpOnly Cookie + CSRF 防护，本项目作为教学取舍用 localStorage。</li>
+          <li><b>&lt;Navigate to="/login" replace /&gt;</b>：React Router 的声明式跳转。<code>replace</code> 表示替换历史记录——用户按返回键不会回到被拦截的页面，避免"跳回死循环"。</li>
+          <li><b>ProtectedRoute 只查"有没有 Token"</b>：不查 Token 是否有效（那是后端的事）。过期了怎么办？第一次请求会 401，被 5.2 的拦截器自动刷新兜住；刷新失败才被踢回登录页。这样路由层保持简单，不用自己解析 JWT。</li>
+          <li><b>Permission 组件用 children 包裹</b>：<code>&lt;Permission permission="article:update"&gt;&lt;Button/&gt;&lt;/Permission&gt;</code>——把"有权限才渲染"做成了声明式组件，业务代码里不用写 if/else。fallback 参数还能支持"无权限时显示别的占位内容"。</li>
+        </ul>
+      </div>
+
+      <h3 id="sec-5-4">5.4 Zustand 状态管理：用户 / 权限 / 菜单</h3>
+      <p>三个全局状态：<code>user</code> 当前用户、<code>permissions</code> 权限码数组、<code>menus</code> 菜单树。登录动作把所有状态一次灌满；<code>hasPermission</code> 支持通配符，是 Permission 组件的判据。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>stores/auth.ts（结构）</span><span class="lang">TS</span></div>
+        <pre class="code"><code><span class="tok-k">export const</span> useAuthStore = create&lt;AuthState&gt;((set, get) =&gt; ({
+
+  login: <span class="tok-k">async</span> (username, password) =&gt; {
+    <span class="tok-k">const</span> result = <span class="tok-k">await</span> authApi.login({ username, password })
+    setTokens(result.accessToken, result.refreshToken)      <span class="tok-c">// Token 落 localStorage</span>
+    set({ user: result.user, permissions: result.user.permissions || [] })
+    <span class="tok-k">await</span> get().fetchMenus()                               <span class="tok-c">// 拉菜单树</span>
+  },
+
+  hasPermission: (perm) =&gt; {
+    <span class="tok-k">const</span> { permissions } = get()
+    <span class="tok-k">if</span> (permissions.includes(<span class="tok-s">'*'</span>) || permissions.includes(<span class="tok-s">'*:*'</span>)) <span class="tok-k">return</span> <span class="tok-k">true</span>
+    <span class="tok-k">return</span> permissions.includes(perm)
+  },
+}))
+
+<span class="tok-c">// App 启动时：有 Token 就先拉用户信息和菜单，恢复登录态</span>
+<span class="tok-k">export async function</span> initAuth(): Promise&lt;boolean&gt; {
+  <span class="tok-k">const</span> token = getToken()
+  <span class="tok-k">if</span> (!token) <span class="tok-k">return</span> <span class="tok-k">false</span>
+  <span class="tok-k">try</span> {
+    <span class="tok-k">await</span> useAuthStore.getState().fetchUserInfo()
+    <span class="tok-k">await</span> useAuthStore.getState().fetchMenus()
+    <span class="tok-k">return</span> <span class="tok-k">true</span>
+  } <span class="tok-k">catch</span> { clearTokens(); <span class="tok-k">return</span> <span class="tok-k">false</span> }
+}</code></pre>
+      </div>
+      <div class="explain">
+        <span class="t">Zustand 是什么？为什么不用 Redux？</span>
+        <p><b>create&lt;AuthState&gt;((set, get) =&gt; ({...}))</b> 是 Zustand 创建 store 的写法：</p>
+        <ul>
+          <li><b>set</b>：更新状态的方法，<code>set({ user, permissions })</code> 触发所有订阅该状态的组件重新渲染。</li>
+          <li><b>get</b>：读取当前最新状态，<code>get().fetchMenus()</code> 调 store 里另一个 action。为什么要用 get 而不是闭包变量？因为闭包里的状态可能是旧的，get 永远拿最新值。</li>
+        </ul>
+        <p><b>选 Zustand 不选 Redux 的理由</b>（本项目体量下的对比）：</p>
+        <ul>
+          <li><b>零样板代码</b>：Redux 需要 action 类型、action creator、reducer、connect/mapStateToProps 一堆模板；Zustand 一个 create 就完了，全局状态就三个（user/permissions/menus），Redux 是杀鸡用牛刀。</li>
+          <li><b>选择订阅</b>：<code>useAuthStore(s =&gt; s.hasPermission)</code> 只订阅 hasPermission 这一个字段，其他字段变化不会触发该组件重渲染，性能自然好。</li>
+          <li><b>Hook 原生支持</b>：直接在 React 组件里用 <code>useAuthStore(...)</code>，不需要 Provider 包裹（Redux 要 <code>&lt;Provider&gt;</code> 包全树）。</li>
+        </ul>
+        <p><b>initAuth() 为什么单独拆出来？</b>刷新页面时 localStorage 里还有 Token，但内存里的 store 是空的——需要重新拉用户信息、菜单树来"恢复登录态"。在 App 挂载时调用，返回 false 说明恢复失败（Token 已失效），前端就跳回登录页。这一步是"刷新不掉线"的关键。</p>
+      </div>
+
+      <h3 id="sec-5-5">5.5 页面开发范式：列表页三步走</h3>
+      <p>所有管理页都是同一套模式：<strong>① 查询状态 + fetch → ② 表格列定义 → ③ 弹窗表单（新增/编辑复用）</strong>。照着下面这段骨架写，CRUD 页面可以直接套。</p>
+      <div class="code-wrap">
+        <div class="code-head"><span>pages/article/index.tsx（页面骨架）</span><span class="lang">TSX</span></div>
+        <pre class="code"><code><span class="tok-k">export default function</span> ArticleList() {
+  <span class="tok-k">const</span> [data, setData] = useState&lt;ArticleVO[]&gt;([])
+  <span class="tok-k">const</span> [total, setTotal] = useState(<span class="tok-n">0</span>)
+  <span class="tok-k">const</span> [query, setQuery] = useState&lt;ArticleQuery&gt;({ page: <span class="tok-n">1</span>, pageSize: <span class="tok-n">10</span> })
+  <span class="tok-k">const</span> [editing, setEditing] = useState&lt;ArticleVO | null&gt;(<span class="tok-k">null</span>)
+  <span class="tok-k">const</span> [drawerOpen, setDrawerOpen] = useState(<span class="tok-k">false</span>)
+  <span class="tok-k">const</span> [form] = Form.useForm()
+
+  <span class="tok-c">// ① 列表加载：query 变化即重新请求</span>
+  <span class="tok-k">const</span> fetchData = <span class="tok-k">async</span> () =&gt; {
+    <span class="tok-k">const</span> result = <span class="tok-k">await</span> articleApi.getList(query)
+    setData(result.records)
+    setTotal(result.total)
+  }
+  useEffect(() =&gt; { fetchData() }, [query])
+
+  <span class="tok-c">// ② 编辑回显：先 resetFields 再 setFieldsValue</span>
+  <span class="tok-k">const</span> handleEdit = (record: ArticleVO) =&gt; {
+    setEditing(record)
+    form.resetFields()
+    articleApi.getById(record.id).then(full =&gt; {
+      form.setFieldsValue({ ...full })   <span class="tok-c">// 详情接口返回全字段（含 content）</span>
+      setDrawerOpen(<span class="tok-k">true</span>)
+    })
+  }
+
+  <span class="tok-c">// ③ 提交：编辑/新增走同一个函数</span>
+  <span class="tok-k">const</span> handleSubmit = <span class="tok-k">async</span> () =&gt; {
+    <span class="tok-k">const</span> values = <span class="tok-k">await</span> form.validateFields()
+    editing
+      ? <span class="tok-k">await</span> articleApi.update({ id: editing.id, ...values })
+      : <span class="tok-k">await</span> articleApi.create(values)
+    message.success(editing ? <span class="tok-s">'编辑成功'</span> : <span class="tok-s">'新增成功'</span>)
+    setDrawerOpen(<span class="tok-k">false</span>)
+    fetchData()
+  }
+
+  <span class="tok-c">// 表格列 + Drawer 表单（略）...</span>
+  <span class="tok-k">return</span> (
+    &lt;&gt;
+      &lt;Card className=<span class="tok-s">"cms-toolbar-card"</span>&gt; <span class="tok-c">{/* 搜索区 */}</span> &lt;/Card&gt;
+      &lt;Card className=<span class="tok-s">"cms-table-card"</span>&gt;  <span class="tok-c">{/* &lt;Table /&gt; */}</span> &lt;/Card&gt;
+      &lt;Drawer forceRender ...&gt;               <span class="tok-c">{/* 编辑表单 */}</span>
+        &lt;Form form={form} layout=<span class="tok-s">"vertical"</span>&gt; ... &lt;/Form&gt;
+      &lt;/Drawer&gt;
+    &lt;/&gt;
+  )
+}</code></pre>
+      </div>
+      <div class="callout warn"><span class="t">编辑回显的坑（真实踩过）：</span>弹窗组件（Modal/Drawer）默认懒挂载内部 Form，如果 <code>setFieldsValue</code> 在弹窗还没打开时就执行，值会被丢弃。解法：弹窗加 <code>forceRender</code> 让 Form 始终挂载，回显先 <code>resetFields()</code> 再 <code>setFieldsValue()</code>，防止脏数据串场。</div>
+      <div class="explain">
+        <span class="t">页面骨架里的每个 Hooks，逐个拆开讲</span>
+        <ul>
+          <li><b>useState</b>：组件级状态。<code>const [data, setData] = useState([])</code> 声明"列表数据"状态；调用 <code>setData(新值)</code> 会触发组件重新渲染，页面自动更新。这就是 React 的"数据驱动视图"——不用手动操作 DOM。</li>
+          <li><b>useEffect(() =&gt; { fetchData() }, [query])</b>：副作用钩子。<code>[query]</code> 是依赖数组——只要 <code>query</code> 变化（比如翻页、改搜索条件），<code>fetchData</code> 就重新执行。<strong>这就是"查询条件一变，列表自动刷新"的原理</strong>。依赖数组为空 <code>[]</code> 则只在挂载时执行一次。注意：不能写成 <code>useEffect(() =&gt; fetchData())</code> 不传依赖——那每次渲染都会执行，且容易死循环。</li>
+          <li><b>Form.useForm()</b>：antd 的表单实例。它脱离"受控组件"的繁琐（不用给每个 Input 绑 value/onChange），通过 <code>form.setFieldsValue()</code> 整体回填、<code>form.validateFields()</code> 统一校验取值。Form 组件用 <code>form={form}</code> 属性接收这个实例，两者绑定。</li>
+          <li><b>forceRender</b>（Drawer 属性）：强制弹窗内部的 Form 在弹窗<strong>未打开时就挂载</strong>。没有它，Form 是在弹窗打开那一刻才创建的，而 <code>setFieldsValue</code> 在打开前就调用了——值被丢进一个还不存在的表单里。这是回显失败的根因。</li>
+          <li><b>编辑时先 resetFields() 再 setFieldsValue()</b>：resetFields 清空上一次编辑残留的值，再回填新值。否则上次编辑的字段会"串"到本次表单里（尤其是弹窗复用时）。</li>
+          <li><b>新增/编辑复用同一个 handleSubmit</b>：靠 <code>editing</code> 是否有值判断——有值走 update 并带上 id，没值走 create。一个函数两条分支，弹窗表单完全复用，省一半代码。</li>
+        </ul>
+        <p><b>为什么 fetchData 用 async 函数但 useEffect 里调用时不 await？</b>useEffect 的回调不支持 async（会报类型错误），所以要么在外面定义 async 函数再调用，要么用 IIFE。这里把 <code>fetchData</code> 定义成独立的 async 函数，既能在 useEffect 里触发，也能在提交成功后手动调用刷新列表（<code>fetchData()</code>），一处定义、多处复用。</p>
+      </div>
+    </section>
+
+    <!-- ======== 6. 运行与部署 ======== -->
+    <section class="card" id="sec-6">
+      <h2 class="sec"><span class="no">06</span>本地运行与 Docker 部署</h2>
+      <p class="sec-desc">开发环境怎么跑起来，生产环境怎么部署。</p>
+
+      <h3>6.1 本地开发</h3>
+      <table>
+        <tr><th>步骤</th><th>操作</th><th>说明</th></tr>
+        <tr><td>1. 初始化数据库</td><td>执行 <code>backend/sql/schema.sql</code> → <code>data.sql</code></td><td>建 13 张表 + 初始数据（admin/admin123 超管）</td></tr>
+        <tr><td>2. 启动 MySQL / Redis</td><td>本机服务或 Docker 单容器</td><td>后端启动时连不上会直接失败</td></tr>
+        <tr><td>3. 配置后端</td><td>改 <code>application-dev.yml</code> 的 <code>DB_PASSWORD</code></td><td>用环境变量 <code>DB_PASSWORD</code> 覆盖默认值</td></tr>
+        <tr><td>4. 启动后端</td><td>IDEA 运行 <code>CmsApplication</code></td><td>端口 8080，context-path <code>/api</code></td></tr>
+        <tr><td>5. 启动前端</td><td><code>npm run dev</code></td><td>端口 3000，Vite proxy 把 <code>/api</code> 转发到 8080</td></tr>
+        <tr><td>6. 访问</td><td><code>http://localhost:3000</code></td><td>接口文档：<code>http://localhost:8080/api/doc.html</code></td></tr>
+      </table>
+
+      <h3>6.2 Docker Compose 一键部署</h3>
+      <div class="code-wrap">
+        <div class="code-head"><span>docker-compose.yml（架构）</span><span class="lang">YAML</span></div>
+        <pre class="code"><code>services:
+  mysql:                    <span class="tok-c"># 8.0，挂载 schema.sql/data.sql 到 initdb，首次启动自动建表</span>
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: cms_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/sql/data.sql:/docker-entrypoint-initdb.d/02-data.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+
+  redis:                    <span class="tok-c"># 7-alpine</span>
+    image: redis:7-alpine
+
+  backend:                  <span class="tok-c"># 多阶段 Dockerfile: maven 构建 -> jre17 运行</span>
+    build: ./backend
+    depends_on:
+      mysql: { condition: service_healthy }   <span class="tok-c"># 等 MySQL 就绪再启动，防连接失败</span>
+      redis: { condition: service_healthy }
+    environment:
+      DB_HOST: mysql
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  frontend:                 <span class="tok-c"># 多阶段: node 构建 -> nginx 托管 + 反向代理 /api</span>
+    build: ./frontend
+    ports: ["80:80"]
+
+volumes:
+  mysql_data:
+  redis_data:</code></pre>
+      </div>
+      <div class="code-wrap">
+        <div class="code-head"><span>部署命令</span><span class="lang">BASH</span></div>
+        <pre class="code"><code><span class="tok-c"># 构建并启动全部容器（首次会自动拉镜像 + 初始化数据库）</span>
+docker compose up -d --build
+
+<span class="tok-c"># 查看状态</span>
+docker compose ps
+
+<span class="tok-c"># 查看后端日志（排查问题首选）</span>
+docker compose logs -f backend
+
+<span class="tok-c"># 停止</span>
+docker compose down</code></pre>
+      </div>
+      <div class="callout tip"><span class="t">多阶段构建的好处：</span>后端镜像里只有 JRE 17（约 300MB），不含 Maven；前端镜像里只有 Nginx + 静态文件（约 50MB），不含 Node。构建环境与运行环境分离，镜像又小又安全。</div>
+    </section>
+
+    <!-- ======== 7. 踩坑实录 ======== -->
+    <section class="card" id="sec-7">
+      <h2 class="sec"><span class="no">07</span>踩坑实录</h2>
+      <p class="sec-desc">下面 7 个问题都是开发过程中真实遇到并修掉的，每个都写了现象、根因和修复方式。</p>
+
+      <table>
+        <tr><th style="width:200px">现象</th><th>根因</th><th>修复</th></tr>
+        <tr>
+          <td><code>1062 Duplicate entry 'admin'</code></td>
+          <td>data.sql 重复执行，唯一键冲突</td>
+          <td>data.sql 开头按依赖顺序 DELETE 所有表 + 重置 AUTO_INCREMENT，变成可安全重复执行的幂等脚本</td>
+        </tr>
+        <tr>
+          <td><code>1062 Duplicate entry '31' for key 'PRIMARY'</code></td>
+          <td>按钮权限 INSERT 没指定显式 ID，自增到 31 与后面日志菜单显式 ID 31/32 撞车</td>
+          <td>所有按钮权限行显式指定 ID 段（101-105、111-114、201-204...），与核心菜单 ID 错开</td>
+        </tr>
+        <tr>
+          <td>登录报 <code>Unsupported character encoding 'utf8mb4'</code></td>
+          <td>JDBC URL 写了 <code>characterEncoding=utf8mb4</code>——该参数只接受 Java 标准字符集名</td>
+          <td>改为 <code>characterEncoding=UTF-8</code>（驱动自动映射 utf8mb4）；建表语句的 CHARSET=utf8mb4 不用动</td>
+        </tr>
+        <tr>
+          <td>登录一直 <code>密码错误</code>，admin/editor 都进不去</td>
+          <td>data.sql 里 BCrypt 哈希是无效占位符，对任何密码都不匹配</td>
+          <td>用 bcrypt 重新生成 admin123 的哈希（$2a$ 前缀、cost 10，与 Spring Security 默认一致）替换</td>
+        </tr>
+        <tr>
+          <td>编辑文章报 <code>Column 'cover' cannot be null</code></td>
+          <td>前端表单没有 cover 字段（提交即 null）+ 后端 update() 没做 null 兜底，null 怼进 NOT NULL 列</td>
+          <td>前端补封面输入框与回显；后端 update() 对可空字段统一 <code>!= null ? x : ""</code> 兜底</td>
+        </tr>
+        <tr>
+          <td>编辑弹窗回显为空</td>
+          <td><code>setFieldsValue</code> 在弹窗未打开（Form 未挂载）时执行，配合 destroyOnClose 值被丢弃</td>
+          <td>弹窗加 <code>forceRender</code>，去掉 destroyOnClose；回显先 resetFields 再 setFieldsValue</td>
+        </tr>
+        <tr>
+          <td>Vite build 报 <code>EPERM</code> 删不掉 dist</td>
+          <td>沙箱/杀软阻止删除旧 dist 目录</td>
+          <td><code>vite build --emptyOutDir false</code> 跳过清空，或手动删 dist</td>
+        </tr>
+      </table>
+
+      <div class="callout warn"><span class="t">从这些坑里总结 3 条经验：</span>① 初始化 SQL 必须能重复执行（幂等）；② 手写 SQL 的可空字段要做 null 兜底；③ 前端"弹窗 + 表单回显"要保证 Form 先挂载再赋值。</div>
+    </section>
+
+    <!-- ======== 8. 学习路线 ======== -->
+    <section class="card" id="sec-8">
+      <h2 class="sec"><span class="no">08</span>学习路线：下一步学什么</h2>
+      <p class="sec-desc">项目做完了，按下面几个方向继续深入。每个方向都列了建议项目和你需要补的知识。</p>
+
+      <table>
+        <tr><th style="width:160px">方向</th><th>建议项目</th><th>复用/深化</th></tr>
+        <tr>
+          <td>消息与异步</td>
+          <td>给通知模块加 Redis Stream / 邮件发送</td>
+          <td>理解 Redis 从"缓存"到"消息管道"，学习 @Async 与最终一致性</td>
+        </tr>
+        <tr>
+          <td>缓存分层</td>
+          <td>文章详情加 Redis 缓存 + 缓存穿透/击穿处理</td>
+          <td>深化 @Cacheable 或手写缓存模板，学布隆过滤器、热点 Key</td>
+        </tr>
+        <tr>
+          <td>文件与对象存储</td>
+          <td>把封面图上传从"URL 输入"升级为真实上传（MinIO/OSS）</td>
+          <td>MultipartFile、分片上传、防盗链、CDN 回源</td>
+        </tr>
+        <tr>
+          <td>前端性能</td>
+          <td>文章列表虚拟滚动 + 路由级代码分割 + 骨架屏</td>
+          <td>React.memo、React.lazy、useDeferredValue，看 Performance 面板</td>
+        </tr>
+        <tr>
+          <td>测试</td>
+          <td>为 UserService 写单元测试，为认证流程写集成测试</td>
+          <td>JUnit 5 + Mockito + Testcontainers（真实 MySQL 容器跑测试）</td>
+        </tr>
+        <tr>
+          <td>运维交付</td>
+          <td>加 CI/CD：GitHub Actions 构建 + 推镜像 + 服务器部署</td>
+          <td>把"能本地跑"变成"能自动上线"，学 Nginx 配置与灰度发布</td>
+        </tr>
+      </table>
+
+      <h3>推荐的阅读顺序</h3>
+      <ol>
+        <li>先读 <code>backend/sql/schema.sql</code>（数据模型是系统的骨架）</li>
+        <li>再读 <code>common/</code>（ApiResponse、全局异常——一切返回的契约）</li>
+        <li>然后 <code>security/</code> + <code>config/SecurityConfig</code>（认证授权的核心）</li>
+        <li>挑一个业务模块完整读：<code>article/</code> 的 Controller → Service → Repository</li>
+        <li>前端从 <code>utils/request.ts</code> 和 <code>stores/auth.ts</code> 开始，再看任意一个页面</li>
+        <li>最后把 <code>docker-compose.yml</code> 跑一遍，感受交付的完整闭环</li>
+      </ol>
+
+      <div class="callout info"><span class="t">总结：</span>这个项目把后台系统都会遇到的认证、权限、审计、CRUD、部署做了一遍，全部用最直白的方式（零 ORM、手写 SQL、显式分层）实现，适合作为自己搭建后台系统的起点。</div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  // ===== 侧边栏滚动高亮 =====
+  // 以视口 40% 高度为基准线，高亮"最后一个顶边不超过基准线"的章节。
+  // DOM 顺序即文档顺序，子章节排在父章节后面，天然优先高亮更深的小节，
+  // 避免父子章节同时进入观察区时互相覆盖导致高亮乱跳。
+  var links = Array.prototype.slice.call(document.querySelectorAll('.sidebar a'))
+  var sections = links.map(function (a) {
+    return document.getElementById(a.getAttribute('href').slice(1))
+  }).filter(Boolean)
+
+  function updateActive() {
+    var mark = window.innerHeight * 0.4
+    var current = null
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].getBoundingClientRect().top <= mark) {
+        current = sections[i]
+      } else {
+        break
+      }
+    }
+    var id = current ? current.id : ''
+    links.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + id)
+    })
+  }
+  window.addEventListener('scroll', updateActive, { passive: true })
+  window.addEventListener('resize', updateActive)
+  updateActive()
+
+  // ===== 代码高亮（轻量 tokenizer）=====
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  var KW = 'package|import|public|private|protected|class|interface|enum|extends|implements|static|final|void|return|new|if|else|for|while|do|switch|case|break|continue|try|catch|finally|throw|throws|this|super|true|false|null|const|let|var|function|export|default|type|async|await|of|in|instanceof|typeof|int|long|short|byte|boolean|number|string|boolean|void|record'
+  var RE = new RegExp('(\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/|--[^\\n]*|"[^"\\n]*"|\'[^\'\\n]*\'|`[^`\\n]*`|\\b(?:' + KW + ')\\b|\\b\\d+(?:\\.\\d+)?\\b)', 'g')
+
+  function highlight(code) {
+    var esc = escapeHtml(code)
+    return esc.replace(RE, function (m) {
+      if (m.charAt(0) === '/' || (m.charAt(0) === '-' && m.charAt(1) === '-')) return '<span class="tok-c">' + m + '</span>'
+      if (m.charAt(0) === '"' || m.charAt(0) === "'" || m.charAt(0) === '`') return '<span class="tok-s">' + m + '</span>'
+      if (m.charAt(0) >= '0' && m.charAt(0) <= '9') return '<span class="tok-n">' + m + '</span>'
+      return '<span class="tok-k">' + m + '</span>'
+    })
+  }
+
+  document.querySelectorAll('pre.code code').forEach(function (el) {
+    el.innerHTML = highlight(el.textContent)
+  })
+</script>
+
+</body>
+</html>
