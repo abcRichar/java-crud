@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter } from 'react-router-dom'
+import { HashRouter } from 'react-router-dom'
 import { Spin } from 'antd'
 import AppRouter from '@/router'
 import { initAuth } from '@/stores/auth'
@@ -20,8 +20,8 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <AppRouter />
-    </BrowserRouter>
+    </HashRouter>
   )
 }

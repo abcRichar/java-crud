@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types'
 
 const TOKEN_KEY = 'cms_access_token'
 const REFRESH_TOKEN_KEY = 'cms_refresh_token'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '')
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
@@ -24,7 +25,7 @@ export function clearTokens(): void {
 }
 
 const request: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -80,7 +81,7 @@ request.interceptors.response.use(
         }
 
         const res = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-          '/api/v1/auth/refresh',
+          `${API_BASE_URL}/auth/refresh`,
           { refreshToken },
         )
 
@@ -100,7 +101,7 @@ request.interceptors.response.use(
         clearTokens()
         pendingQueue = []
         message.error('登录已过期，请重新登录')
-        window.location.href = '/login'
+        window.location.href = '/#/login'
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

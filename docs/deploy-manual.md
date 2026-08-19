@@ -115,7 +115,7 @@ scp target/cms-backend-1.0.0.jar root@服务器IP:/opt/cms/backend/
 
 ## 5. 配置并启动后端
 
-后端用 `prod` profile，全部连接信息通过环境变量注入（注意：**这些变量没有默认值，少一个都启动失败**）：
+后端用 `prod` profile，连接信息支持环境变量覆盖（配置里已有默认值 127.0.0.1，不设也能启动；但生产环境建议至少改 DB_PASSWORD 和 JWT_SECRET）：
 
 | 环境变量 | 示例值 | 说明 |
 |----------|--------|------|
@@ -165,7 +165,7 @@ systemctl enable --now cms-backend
 
 ```bash
 journalctl -u cms-backend -f          # 实时看日志，看到 "Started CmsApplication" 即成功
-curl http://127.0.0.1:8080/api/auth/login -X POST -H "Content-Type: application/json" \
+curl http://127.0.0.1:8080/api/v1/auth/login -X POST -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 # 返回 JSON 里带 accessToken 就说明后端 + 数据库 + Redis 全通了
 ```
@@ -233,7 +233,7 @@ systemctl reload nginx
 curl -I http://服务器IP/
 
 # 2. 登录接口通
-curl http://服务器IP/api/auth/login -X POST -H "Content-Type: application/json" \
+curl http://服务器IP/api/v1/auth/login -X POST -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
 # 3. 浏览器打开 http://服务器IP/ 用 admin/admin123 登录
@@ -241,8 +241,8 @@ curl http://服务器IP/api/auth/login -X POST -H "Content-Type: application/jso
 
 ## 8. 常见问题
 
-**Q1: 启动报 "Could not resolve placeholder 'DB_HOST'"**
-环境变量没设全。prod 配置里所有 `DB_*` / `REDIS_*` 变量都是必填的，`REDIS_PASSWORD` 也要设为空串。
+**Q1: 启动报数据库连接失败**
+检查 DB_HOST、DB_PASSWORD 等环境变量是否正确。prod 配置已有默认值（localhost），但数据库密码默认是 123456，你的服务器密码可能不同。
 
 **Q2: MySQL root 登录不上去**
 Ubuntu 的 MySQL 8 root 默认用 auth_socket，直接 `sudo mysql` 免密进，再改密码或按第 3 节建专用账号。

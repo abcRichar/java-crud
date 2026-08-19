@@ -62,30 +62,13 @@ cms-project
 │       ├── stores/         # Zustand 状态
 │       ├── types/          # TypeScript 类型
 │       └── utils/          # 工具 (Axios 封装)
-├── docker-compose.yml      # Docker 编排
+├── docs/                   # 部署文档
 └── README.md
 ```
 
 ## 快速开始
 
-### 方式一: Docker Compose (推荐)
-
-```bash
-# 克隆项目
-cd cms-project
-
-# 一键启动所有服务 (MySQL + Redis + Backend + Frontend)
-docker-compose up -d
-
-# 等待服务启动后访问:
-# 前端: http://localhost
-# 后端 API: http://localhost:8080/api
-# API 文档: http://localhost:8080/api/doc.html
-```
-
-### 方式二: 本地开发
-
-#### 1. 启动 MySQL 和 Redis
+### 1. 启动 MySQL 和 Redis
 
 确保本地有 MySQL 8 和 Redis 运行。
 
@@ -108,7 +91,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 后端启动后:
-- API 地址: http://localhost:8080/api
+- API 地址: http://localhost:8080/api/v1
 - Swagger 文档: http://localhost:8080/api/doc.html
 
 #### 3. 启动前端
@@ -124,6 +107,39 @@ npm run dev
 ```
 
 前端启动后访问: http://localhost:3000
+
+### 生产部署
+
+部署到服务器时不使用 Docker，直接用 jar + Nginx 即可，详见:
+
+- `docs/deploy-bt.md` — 宝塔面板部署指南
+- `docs/deploy-manual.md` — 纯命令行手动部署指南
+
+打包命令:
+
+```bash
+# 后端打包
+cd backend
+mvn package -DskipTests
+# 产物: target/cms-backend-1.0.0.jar
+
+# 前端打包
+cd frontend
+npm run build
+# 产物: dist/
+```
+
+启动 jar 时指定 prod 配置:
+
+```bash
+java -jar cms-backend-1.0.0.jar --spring.profiles.active=prod
+```
+
+如果数据库 / Redis 地址不是默认值，用环境变量覆盖:
+
+```bash
+DB_HOST=192.168.1.100 DB_PASSWORD=yourpass REDIS_HOST=192.168.1.100 java -jar cms-backend-1.0.0.jar --spring.profiles.active=prod
+```
 
 ## 默认账号
 
@@ -174,13 +190,15 @@ npm run dev
 
 ## 环境变量
 
+以下变量均支持环境变量覆盖，不设则使用 application.yml 中的默认值 (dev 环境默认 localhost):
+
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
 | DB_HOST | MySQL 主机 | localhost |
 | DB_PORT | MySQL 端口 | 3306 |
 | DB_NAME | 数据库名 | cms_db |
 | DB_USERNAME | 数据库用户名 | root |
-| DB_PASSWORD | 数据库密码 | root |
+| DB_PASSWORD | 数据库密码 | 123456 |
 | REDIS_HOST | Redis 主机 | localhost |
 | REDIS_PORT | Redis 端口 | 6379 |
 | REDIS_PASSWORD | Redis 密码 | (空) |

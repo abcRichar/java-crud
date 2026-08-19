@@ -109,17 +109,17 @@ export default function Login() {
             </Form.Item>
           </Form>
 
-          <Divider plain style={{ color: '#d1d5db', fontSize: 12, margin: '8px 0 20px' }}>
-            测试账号
-          </Divider>
-          <div style={{
-            display: 'flex', justifyContent: 'center', gap: 8, fontSize: 12.5, color: '#6b7280',
-            background: '#f8fafc', borderRadius: 8, padding: '10px 12px',
-          }}>
-            <span>admin / admin123</span>
-            <span style={{ color: '#d1d5db' }}>|</span>
-            <span>editor / admin123</span>
-          </div>
+          {/*<Divider plain style={{ color: '#d1d5db', fontSize: 12, margin: '8px 0 20px' }}>*/}
+          {/*  测试账号*/}
+          {/*</Divider>*/}
+          {/*<div style={{*/}
+          {/*  display: 'flex', justifyContent: 'center', gap: 8, fontSize: 12.5, color: '#6b7280',*/}
+          {/*  background: '#f8fafc', borderRadius: 8, padding: '10px 12px',*/}
+          {/*}}>*/}
+          {/*  <span>admin / admin123</span>*/}
+          {/*  <span style={{ color: '#d1d5db' }}>|</span>*/}
+          {/*  <span>editor / admin123</span>*/}
+          {/*</div>*/}
         </div>
       </div>
     </div>
