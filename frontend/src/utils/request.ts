@@ -44,7 +44,10 @@ request.interceptors.request.use(
 
 // Response interceptor: unified error handling + token refresh
 let isRefreshing = false
-let pendingQueue: Array<() => void> = []
+let pendingQueue: Array<{
+  resolve: () => void
+  reject: (error: unknown) => void
+}> = []
 
 request.interceptors.response.use(
   (response) => {
@@ -62,11 +65,13 @@ request.interceptors.response.use(
     // 401: try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Wait for refresh to complete
-        return new Promise((resolve) => {
-          pendingQueue.push(() => {
-            originalRequest.headers.Authorization = `Bearer ${getToken()}`
-            resolve(request(originalRequest))
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({
+            resolve: () => {
+              originalRequest.headers.Authorization = `Bearer ${getToken()}`
+              resolve(request(originalRequest))
+            },
+            reject,
           })
         })
       }
@@ -91,7 +96,7 @@ request.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${accessToken}`
 
           // Process pending requests
-          pendingQueue.forEach((cb) => cb())
+          pendingQueue.forEach(({ resolve }) => resolve())
           pendingQueue = []
 
           return request(originalRequest)
@@ -99,6 +104,7 @@ request.interceptors.response.use(
         throw new Error('Refresh failed')
       } catch (refreshError) {
         clearTokens()
+        pendingQueue.forEach(({ reject }) => reject(refreshError))
         pendingQueue = []
         message.error('登录已过期，请重新登录')
         window.location.href = '/#/login'

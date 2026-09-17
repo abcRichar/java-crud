@@ -3,8 +3,10 @@ package com.example.cms.log.aspect;
 import com.example.cms.common.utils.SecurityUtils;
 import com.example.cms.log.annotation.OperationLog;
 import com.example.cms.log.repository.LogRepository;
-import com.example.cms.security.SecurityUser;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
@@ -32,21 +36,26 @@ public class OperationLogAspect {
     @Around("@annotation(operationLog)")
     public Object around(ProceedingJoinPoint joinPoint, OperationLog operationLog) throws Throwable {
         long startTime = System.currentTimeMillis();
-
-        Object result = joinPoint.proceed();
-
-        long costTime = System.currentTimeMillis() - startTime;
+        Throwable failure = null;
 
         try {
-            saveLog(joinPoint, operationLog, costTime);
-        } catch (Exception e) {
-            log.warn("Failed to save operation log: {}", e.getMessage());
-        }
+            return joinPoint.proceed();
+        } catch (Throwable throwable) {
+            failure = throwable;
+            throw throwable;
+        } finally {
+            long costTime = System.currentTimeMillis() - startTime;
 
-        return result;
+            try {
+                saveLog(joinPoint, operationLog, costTime, failure);
+            } catch (Exception e) {
+                log.warn("Failed to save operation log: {}", e.getMessage());
+            }
+        }
     }
 
-    private void saveLog(ProceedingJoinPoint joinPoint, OperationLog operationLog, long costTime) {
+    private void saveLog(ProceedingJoinPoint joinPoint, OperationLog operationLog,
+                         long costTime, Throwable failure) {
         ServletRequestAttributes attributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) return;
@@ -63,6 +72,9 @@ public class OperationLogAspect {
         String operation = operationLog.value().isEmpty()
                 ? signature.getDeclaringType().getSimpleName() + "." + signature.getName()
                 : operationLog.value();
+        if (failure != null) {
+            operation += "（失败）";
+        }
 
         String ip = getClientIp(request);
 
@@ -93,7 +105,9 @@ public class OperationLogAspect {
                 paramMap.put(paramNames[i], arg);
             }
 
-            String json = objectMapper.writeValueAsString(paramMap);
+            JsonNode node = objectMapper.valueToTree(paramMap);
+            maskSensitiveFields(node);
+            String json = objectMapper.writeValueAsString(node);
             // Truncate to prevent overly long params
             return json.length() > 2000 ? json.substring(0, 2000) + "..." : json;
         } catch (Exception e) {
@@ -113,5 +127,25 @@ public class OperationLogAspect {
             ip = ip.split(",")[0].trim();
         }
         return ip != null ? ip : "unknown";
+    }
+
+    private void maskSensitiveFields(JsonNode node) {
+        if (node instanceof ObjectNode objectNode) {
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                String name = field.getKey().toLowerCase(Locale.ROOT);
+                if (name.contains("password") || name.contains("token")
+                        || name.contains("secret") || name.contains("authorization")) {
+                    objectNode.put(field.getKey(), "***");
+                } else {
+                    maskSensitiveFields(field.getValue());
+                }
+            }
+            return;
+        }
+        if (node instanceof ArrayNode arrayNode) {
+            arrayNode.forEach(this::maskSensitiveFields);
+        }
     }
 }

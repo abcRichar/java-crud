@@ -593,18 +593,19 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(Long userId, String username) {
-        return generateToken(userId, username, accessExp, "ACCESS");
+    public String generateAccessToken(Long userId, String username, String sessionId) {
+        return generateToken(userId, username, sessionId, accessExp, "ACCESS");
     }
 
-    public String generateRefreshToken(Long userId, String username) {
-        return generateToken(userId, username, refreshExp, "REFRESH");
+    public String generateRefreshToken(Long userId, String username, String sessionId) {
+        return generateToken(userId, username, sessionId, refreshExp, "REFRESH");
     }
 
-    private String generateToken(Long userId, String username, long expiration, String type) {
+    private String generateToken(Long userId, String username, String sessionId, long expiration, String type) {
         Map&lt;String, Object&gt; claims = new HashMap&lt;&gt;();
         claims.put("userId", userId);
         claims.put("type", type);
+        claims.put("sessionId", sessionId);
 
         return Jwts.builder()
                 .claims(claims)
@@ -629,11 +630,11 @@ public class JwtTokenProvider {
           <li><b>@PostConstruct</b>：Spring 生命周期注解——Bean 构造完成、<strong>依赖注入完成后</strong>自动执行一次 <code>init()</code>。这里把字符串密钥转成 <code>SecretKey</code> 对象。为什么不在构造方法里做？因为 <code>@Value</code> 注入发生在构造之后，构造方法里读 <code>secret</code> 还是 null。</li>
         </ul>
         <p><b>为什么 key 只初始化一次？</b>JWT 签名/验签是高频操作，如果每次调用都重新算 key 就是浪费。单例 Bean + <code>@PostConstruct</code> 保证进程生命周期内只有一份 key。</p>
-        <p><b>为什么两个 Token 共用同一个密钥？</b>Access 和 Refresh 用同一套签发逻辑，只是 <code>type</code> claim（"ACCESS"/"REFRESH"）和过期时间不同。解析时先看 type 就知道它是哪种 Token，这在 4.4 的过滤器里是判断"是否允许自动刷新"的依据。共用密钥也简化了配置——一套 <code>jwt.secret</code> 就够了。</p>
+        <p><b>为什么两个 Token 共用同一个密钥？</b>Access 和 Refresh 用同一套签发逻辑，只是 <code>type</code> claim（"ACCESS"/"REFRESH"）和过期时间不同。两者还共享同一个 <code>sessionId</code>，该 ID 会写入 Redis；退出登录或刷新 Token 时服务端删除旧会话，旧 Access/Refresh Token 会立即失效。</p>
       </div>
 
       <h3 id="sec-4-4">4.4 安全过滤链：无状态 + 过滤器鉴权</h3>
-      <p>无状态会话（<code>STATELESS</code>）意味着服务端不存 Session，每次请求都靠 JWT 自证身份。核心就两个文件：<code>SecurityConfig</code> 定义放行规则和过滤器位置；<code>JwtAuthenticationFilter</code> 在每个请求进来时解析 Token、把身份塞进 SecurityContext。</p>
+      <p>Spring Security 使用 <code>STATELESS</code>，不创建 HttpSession；身份仍由 JWT 承载，同时用 Redis 保存可撤销的 Token 会话。核心文件包括 <code>SecurityConfig</code>、<code>JwtAuthenticationFilter</code> 和 <code>TokenSessionService</code>。</p>
       <div class="code-wrap">
         <div class="code-head"><span>config/SecurityConfig.java</span><span class="lang">JAVA</span></div>
         <pre class="code"><code>@Configuration
@@ -677,7 +678,7 @@ public class SecurityConfig {
         <span class="t">三行关键配置，为什么这么写？</span>
         <ul>
           <li><b>csrf disable</b>：CSRF 防护针对"基于 Cookie 的会话"——攻击者伪造表单让浏览器自动带上你的 Cookie。而本项目用 JWT，Token 存在 JS 变量里由前端手动放入 Header，攻击者无法伪造，所以 CSRF 没有意义，关掉。</li>
-          <li><b>STATELESS</b>：明确告诉 Security"服务端不存 Session，不创建、不使用 HttpSession"。每个请求都是独立的，身份全靠 JWT 自证。这才能支撑水平扩展——多个后端实例之间无需同步 Session。</li>
+          <li><b>STATELESS</b>：告诉 Security 不创建、不使用 HttpSession。身份由 JWT 和 Redis 中的可撤销会话共同校验；多个后端实例共享 Redis 即可支持水平扩展。</li>
           <li><b>addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)</b>：把自定义过滤器插到"用户名密码认证过滤器"<strong>之前</strong>。因为我们是无状态 JWT，不需要 UsernamePasswordAuthenticationFilter 去走表单登录流程——我们的过滤器先解析 Token，能解析出身份就直接放行，解析不出再交给后续逻辑（最终返回 401）。"插队"的位置决定了执行顺序。</li>
         </ul>
       </div>
@@ -1285,7 +1286,7 @@ docker compose down</code></pre>
         <tr>
           <td><code>1062 Duplicate entry 'admin'</code></td>
           <td>data.sql 重复执行，唯一键冲突</td>
-          <td>data.sql 开头按依赖顺序 DELETE 所有表 + 重置 AUTO_INCREMENT，变成可安全重复执行的幂等脚本</td>
+          <td>改用 <code>INSERT ... WHERE NOT EXISTS</code> 和 <code>INSERT IGNORE</code>，重复执行只补齐缺失数据，并且不会清空现有业务数据</td>
         </tr>
         <tr>
           <td><code>1062 Duplicate entry '31' for key 'PRIMARY'</code></td>

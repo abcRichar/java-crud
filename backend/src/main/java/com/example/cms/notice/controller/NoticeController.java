@@ -6,6 +6,7 @@ import com.example.cms.notice.dto.NoticeCreateDTO;
 import com.example.cms.notice.dto.NoticeUpdateDTO;
 import com.example.cms.notice.service.NoticeService;
 import com.example.cms.notice.vo.NoticeVO;
+import com.example.cms.notice.vo.NoticeUserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -20,6 +21,14 @@ import org.springframework.web.bind.annotation.*;
 public class NoticeController {
 
     private final NoticeService noticeService;
+
+    @Operation(summary = "我的通知(分页)")
+    @GetMapping("/my")
+    public ApiResponse<PageResult<NoticeUserVO>> myNotices(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+        return ApiResponse.success(noticeService.getMyNotices(page, pageSize));
+    }
 
     @Operation(summary = "通知列表(分页)")
     @GetMapping

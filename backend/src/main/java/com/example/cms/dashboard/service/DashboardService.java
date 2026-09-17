@@ -30,6 +30,7 @@ public class DashboardService {
     }
 
     public Map<String, Object> getUserGrowthTrend(int days) {
+        days = Math.max(1, Math.min(days, 365));
         String sql = """
                 SELECT DATE(created_at) as date, COUNT(*) as cnt
                 FROM sys_user
@@ -51,6 +52,7 @@ public class DashboardService {
     }
 
     public Map<String, Object> getArticleTrend(int days) {
+        days = Math.max(1, Math.min(days, 365));
         List<Object[]> rows = articleRepository.countByDay(days);
         List<String> dates = new ArrayList<>();
         List<Long> counts = new ArrayList<>();

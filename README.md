@@ -63,6 +63,13 @@ cms-project
 │       ├── types/          # TypeScript 类型
 │       └── utils/          # 工具 (Axios 封装)
 ├── docs/                   # 部署文档
+│   ├── deploy-bt.md        # 宝塔面板部署
+│   ├── deploy-manual.md    # 命令行手动部署
+│   └── deploy-cicd.md      # GitHub Actions CI/CD
+├── deploy/
+│   └── cms-backend.service # systemd 服务文件模板
+├── .github/workflows/
+│   └── deploy.yml          # CI/CD 工作流
 └── README.md
 ```
 
@@ -77,6 +84,8 @@ cms-project
 mysql -u root -p < backend/sql/schema.sql
 mysql -u root -p < backend/sql/data.sql
 ```
+
+`data.sql` 是幂等初始化脚本，不会清空已有业务数据；重复执行只会补齐缺失的初始数据。
 
 #### 2. 启动后端
 
@@ -138,8 +147,12 @@ java -jar cms-backend-1.0.0.jar --spring.profiles.active=prod
 如果数据库 / Redis 地址不是默认值，用环境变量覆盖:
 
 ```bash
-DB_HOST=192.168.1.100 DB_PASSWORD=yourpass REDIS_HOST=192.168.1.100 java -jar cms-backend-1.0.0.jar --spring.profiles.active=prod
+DB_HOST=192.168.1.100 DB_PASSWORD=yourpass JWT_SECRET=your-strong-secret REDIS_HOST=192.168.1.100 java -jar cms-backend-1.0.0.jar --spring.profiles.active=prod
 ```
+
+### CI/CD 自动部署
+
+项目内置 GitHub Actions 工作流，push 到 main 分支自动构建并部署到服务器，详见 `docs/deploy-cicd.md`。首次配置只需 3 步：生成 SSH 密钥 → 服务器装 systemd 服务 → GitHub 填 4 个 Secrets。
 
 ## 默认账号
 
@@ -190,7 +203,7 @@ DB_HOST=192.168.1.100 DB_PASSWORD=yourpass REDIS_HOST=192.168.1.100 java -jar cm
 
 ## 环境变量
 
-以下变量均支持环境变量覆盖，不设则使用 application.yml 中的默认值 (dev 环境默认 localhost):
+以下变量均支持环境变量覆盖；开发环境有本地默认值，生产环境必须显式设置数据库密码和 JWT 密钥：
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
@@ -198,11 +211,11 @@ DB_HOST=192.168.1.100 DB_PASSWORD=yourpass REDIS_HOST=192.168.1.100 java -jar cm
 | DB_PORT | MySQL 端口 | 3306 |
 | DB_NAME | 数据库名 | cms_db |
 | DB_USERNAME | 数据库用户名 | root |
-| DB_PASSWORD | 数据库密码 | 123456 |
+| DB_PASSWORD | 数据库密码 | dev: 123456；prod: 必填 |
 | REDIS_HOST | Redis 主机 | localhost |
 | REDIS_PORT | Redis 端口 | 6379 |
 | REDIS_PASSWORD | Redis 密码 | (空) |
-| JWT_SECRET | JWT 密钥 | (内置默认，生产环境必须替换) |
+| JWT_SECRET | JWT 密钥 | dev: 内置默认；prod: 必填 |
 
 ## License
 

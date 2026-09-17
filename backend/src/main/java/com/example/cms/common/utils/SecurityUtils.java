@@ -24,4 +24,12 @@ public final class SecurityUtils {
         }
         return null;
     }
+
+    public static String getCurrentSessionId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof com.example.cms.security.SecurityUser securityUser) {
+            return securityUser.getSessionId();
+        }
+        return null;
+    }
 }

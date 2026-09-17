@@ -70,6 +70,12 @@ export interface UserUpdateDTO {
   roleIds?: number[]
 }
 
+export interface UserOptionVO {
+  id: number
+  username: string
+  nickname: string
+}
+
 // Role types
 export interface RoleVO {
   id: number
@@ -225,6 +231,12 @@ export interface NoticeVO {
   createdBy: number
   createdAt: string
   updatedAt: string
+  userIds?: number[]
+}
+
+export interface NoticeUserVO extends NoticeVO {
+  isRead: number
+  readAt?: string
 }
 
 export interface NoticeCreateDTO {

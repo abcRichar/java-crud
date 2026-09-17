@@ -1,5 +1,12 @@
 import request from '@/utils/request'
-import type { ApiResponse, PageResult, UserVO, UserCreateDTO, UserUpdateDTO } from '@/types'
+import type {
+  ApiResponse,
+  PageResult,
+  UserVO,
+  UserCreateDTO,
+  UserUpdateDTO,
+  UserOptionVO,
+} from '@/types'
 
 export interface UserQuery {
   keyword?: string
@@ -14,6 +21,9 @@ export const userApi = {
 
   getById: (id: number) =>
     request.get<ApiResponse<UserVO>>(`/users/${id}`).then((r) => r.data.data),
+
+  getOptions: () =>
+    request.get<ApiResponse<UserOptionVO[]>>('/users/options').then((r) => r.data.data),
 
   create: (data: UserCreateDTO) =>
     request.post<ApiResponse<number>>('/users', data).then((r) => r.data.data),

@@ -40,7 +40,7 @@
 4. 再次 **导入** → 选择 `data.sql` → 执行
 5. 验证：左侧看到 13 张表（sys_user、cms_article 等）即成功
 
-> data.sql 可安全重复执行，导入两次也不会出错。
+> data.sql 是幂等脚本，不会清空已有业务数据；重复执行只会补齐缺失的初始数据。
 
 ## 3. 部署后端 jar
 
@@ -54,7 +54,7 @@
    - Jar 路径：`/www/wwwroot/cms/backend/cms-backend-1.0.0.jar`
    - 项目端口：`8080`
    - 启动参数：`--spring.profiles.active=prod --server.address=127.0.0.1`
-   - **环境变量**（配置里已有默认值，不设也能启动；但生产环境建议至少改 DB_PASSWORD 和 JWT_SECRET）：
+   - **环境变量**（数据库地址有本地默认值；`DB_PASSWORD` 和 `JWT_SECRET` 为必填）：
      | 变量名            | 值                                                |
      | -------------- | ------------------------------------------------ |
      | DB_HOST        | 127.0.0.1                                        |
@@ -85,13 +85,13 @@ User=root
 WorkingDirectory=/www/wwwroot/cms/backend
 Environment=DB_HOST=127.0.0.1
 Environment=DB_PORT=3306
-Environment=DB_NAME=cms
+Environment=DB_NAME=cms_db
 Environment=DB_USERNAME=cms
-Environment=DB_PASSWORD=bfPAatBfc3zwp3iK
+Environment=DB_PASSWORD=请填写数据库密码
 Environment=REDIS_HOST=127.0.0.1
 Environment=REDIS_PORT=6379
 Environment="REDIS_PASSWORD="
-Environment=JWT_SECRET=dGhpcyBpcyBhIHNlY3JldCBrZXkgZm9yIENTTVMgamR3dCB0b2tlbiBzaWduaW5nIGFuZCB2ZXJpZmljYXRpb24=
+Environment=JWT_SECRET=请填写至少32字节的随机密钥
 ExecStart=/usr/bin/java -jar /www/wwwroot/cms/backend/cms-backend-1.0.0.jar --spring.profiles.active=prod --server.address=127.0.0.1
 Restart=always
 RestartSec=10
@@ -178,7 +178,7 @@ phpMyAdmin 导入大文件会超时，schema.sql/data.sql 很小一般没事。�
 
 - 后端：上传新 jar 覆盖 → Java 项目里重启
 - 前端：上传新 dist 覆盖文件 → Nginx 不用动
-- 数据库：schema.sql 有变更先备份再导；data.sql 可随时重跑（会清空业务数据）
+- 数据库：schema.sql 有变更先备份再导；data.sql 幂等，可安全重跑且会保留已有业务数据
 
 ## 0. 如何拿到 jar 和 dist
 

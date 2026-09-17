@@ -3,13 +3,14 @@ package com.example.cms.notice.service;
 import com.example.cms.common.enums.ResultCode;
 import com.example.cms.common.exception.BusinessException;
 import com.example.cms.common.response.PageResult;
+import com.example.cms.common.utils.PageUtils;
 import com.example.cms.common.utils.SecurityUtils;
 import com.example.cms.notice.dto.NoticeCreateDTO;
 import com.example.cms.notice.dto.NoticeUpdateDTO;
 import com.example.cms.notice.entity.Notice;
 import com.example.cms.notice.repository.NoticeRepository;
 import com.example.cms.notice.vo.NoticeVO;
-import com.example.cms.user.repository.UserRepository;
+import com.example.cms.notice.vo.NoticeUserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,20 +22,32 @@ import java.util.List;
 public class NoticeService {
 
     private final NoticeRepository noticeRepository;
-    private final UserRepository userRepository;
 
     public PageResult<NoticeVO> getPage(String keyword, String type, String status, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
-        List<Notice> notices = noticeRepository.findPage(keyword, type, status, offset, pageSize);
+        PageUtils.Page pageInfo = PageUtils.normalize(page, pageSize);
+        List<Notice> notices = noticeRepository.findPage(
+                keyword, type, status, pageInfo.offset(), pageInfo.pageSize());
         long total = noticeRepository.count(keyword, type, status);
         List<NoticeVO> voList = notices.stream().map(this::toVO).toList();
-        return PageResult.of(voList, total, page, pageSize);
+        return PageResult.of(voList, total, pageInfo.page(), pageInfo.pageSize());
     }
 
     public NoticeVO getById(Long id) {
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOTICE_NOT_FOUND));
         return toVO(notice);
+    }
+
+    public PageResult<NoticeUserVO> getMyNotices(int page, int pageSize) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        if (userId == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+        PageUtils.Page pageInfo = PageUtils.normalize(page, pageSize);
+        List<NoticeUserVO> records = noticeRepository.findUserNotices(
+                userId, pageInfo.offset(), pageInfo.pageSize());
+        long total = noticeRepository.countUserNotices(userId);
+        return PageResult.of(records, total, pageInfo.page(), pageInfo.pageSize());
     }
 
     @Transactional
@@ -89,6 +102,10 @@ public class NoticeService {
     public void publish(Long id) {
         noticeRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ResultCode.NOTICE_NOT_FOUND));
+
+        if (noticeRepository.findUserIdsByNoticeId(id).isEmpty()) {
+            noticeRepository.insertNoticeUsersForAllActiveUsers(id);
+        }
         noticeRepository.updateStatus(id, "PUBLISHED");
     }
 
@@ -104,6 +121,9 @@ public class NoticeService {
         Long userId = SecurityUtils.getCurrentUserId();
         if (userId == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+        if (!noticeRepository.isNoticeVisibleToUser(noticeId, userId)) {
+            throw new BusinessException(ResultCode.NOTICE_NOT_FOUND);
         }
         noticeRepository.markAsRead(noticeId, userId);
     }
@@ -124,6 +144,7 @@ public class NoticeService {
         vo.setCreatedBy(notice.getCreatedBy());
         vo.setCreatedAt(notice.getCreatedAt());
         vo.setUpdatedAt(notice.getUpdatedAt());
+        vo.setUserIds(noticeRepository.findUserIdsByNoticeId(notice.getId()));
         return vo;
     }
 }

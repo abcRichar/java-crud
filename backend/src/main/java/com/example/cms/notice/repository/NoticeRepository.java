@@ -1,6 +1,7 @@
 package com.example.cms.notice.repository;
 
 import com.example.cms.notice.entity.Notice;
+import com.example.cms.notice.vo.NoticeUserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -151,7 +152,7 @@ public class NoticeRepository {
         jdbcTemplate.update(sql, noticeId, userId);
     }
 
-    public List<Notice> findUserNotices(Long userId, int offset, int limit) {
+    public List<NoticeUserVO> findUserNotices(Long userId, int offset, int limit) {
         String sql = """
                 SELECT n.id, n.title, n.content, n.type, n.status, n.created_by, n.created_at, n.updated_at,
                        nu.is_read, nu.read_at
@@ -160,7 +161,23 @@ public class NoticeRepository {
                 WHERE nu.user_id = ? AND n.deleted = 0 AND n.status = 'PUBLISHED'
                 ORDER BY n.created_at DESC LIMIT ? OFFSET ?
                 """;
-        return jdbcTemplate.query(sql, NOTICE_ROW_MAPPER, userId, limit, offset);
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            NoticeUserVO vo = new NoticeUserVO();
+            vo.setId(rs.getLong("id"));
+            vo.setTitle(rs.getString("title"));
+            vo.setContent(rs.getString("content"));
+            vo.setType(rs.getString("type"));
+            vo.setStatus(rs.getString("status"));
+            vo.setCreatedBy(rs.getLong("created_by"));
+            Timestamp createdAt = rs.getTimestamp("created_at");
+            Timestamp updatedAt = rs.getTimestamp("updated_at");
+            Timestamp readAt = rs.getTimestamp("read_at");
+            vo.setCreatedAt(createdAt != null ? createdAt.toLocalDateTime() : null);
+            vo.setUpdatedAt(updatedAt != null ? updatedAt.toLocalDateTime() : null);
+            vo.setReadAt(readAt != null ? readAt.toLocalDateTime() : null);
+            vo.setIsRead(rs.getInt("is_read"));
+            return vo;
+        }, userId, limit, offset);
     }
 
     public long countUserNotices(Long userId) {
@@ -179,5 +196,33 @@ public class NoticeRepository {
                 WHERE nu.user_id = ? AND nu.is_read = 0 AND n.deleted = 0 AND n.status = 'PUBLISHED'
                 """;
         return jdbcTemplate.queryForObject(sql, Long.class, userId);
+    }
+
+    public boolean isNoticeVisibleToUser(Long noticeId, Long userId) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM sys_notice n
+                INNER JOIN sys_notice_user nu ON n.id = nu.notice_id
+                WHERE n.id = ? AND nu.user_id = ?
+                  AND n.deleted = 0 AND n.status = 'PUBLISHED'
+                """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, noticeId, userId);
+        return count != null && count > 0;
+    }
+
+    public List<Long> findUserIdsByNoticeId(Long noticeId) {
+        return jdbcTemplate.queryForList(
+                "SELECT user_id FROM sys_notice_user WHERE notice_id = ? ORDER BY user_id",
+                Long.class,
+                noticeId
+        );
+    }
+
+    public int insertNoticeUsersForAllActiveUsers(Long noticeId) {
+        String sql = """
+                INSERT IGNORE INTO sys_notice_user (notice_id, user_id)
+                SELECT ?, id FROM sys_user WHERE deleted = 0 AND status = 1
+                """;
+        return jdbcTemplate.update(sql, noticeId);
     }
 }

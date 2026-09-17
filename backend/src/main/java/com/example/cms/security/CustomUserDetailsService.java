@@ -34,7 +34,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                         rs.getString("username"),
                         rs.getString("password"),
                         status == 1,
-                        permissions
+                        permissions,
+                        null
                 );
             }, username);
         } catch (Exception e) {
@@ -57,7 +58,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                         rs.getString("username"),
                         rs.getString("password"),
                         rs.getInt("status") == 1,
-                        permissions
+                        permissions,
+                        null
                 );
             }, userId);
         } catch (Exception e) {
@@ -69,9 +71,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         String sql = """
                 SELECT DISTINCT m.permission
                 FROM sys_user_role ur
+                INNER JOIN sys_role r ON ur.role_id = r.id
                 INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id
                 INNER JOIN sys_menu m ON rm.menu_id = m.id
-                WHERE ur.user_id = ? AND m.deleted = 0 AND m.permission != '' AND m.status = 1
+                WHERE ur.user_id = ?
+                  AND r.deleted = 0 AND r.status = 1
+                  AND m.deleted = 0 AND m.permission != '' AND m.status = 1
                 """;
 
         return new HashSet<>(jdbcTemplate.queryForList(sql, String.class, userId));

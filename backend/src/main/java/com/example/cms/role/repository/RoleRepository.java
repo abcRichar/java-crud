@@ -160,4 +160,11 @@ public class RoleRepository {
         Long count = jdbcTemplate.queryForObject(sql, Long.class, roleId);
         return count != null && count > 0;
     }
+
+    public List<Long> findAllActiveMenuIds() {
+        return jdbcTemplate.queryForList(
+                "SELECT id FROM sys_menu WHERE deleted = 0 AND status = 1",
+                Long.class
+        );
+    }
 }

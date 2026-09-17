@@ -34,21 +34,22 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateAccessToken(Long userId, String username) {
-        return generateToken(userId, username, accessTokenExpiration, "ACCESS");
+    public String generateAccessToken(Long userId, String username, String sessionId) {
+        return generateToken(userId, username, sessionId, accessTokenExpiration, "ACCESS");
     }
 
-    public String generateRefreshToken(Long userId, String username) {
-        return generateToken(userId, username, refreshTokenExpiration, "REFRESH");
+    public String generateRefreshToken(Long userId, String username, String sessionId) {
+        return generateToken(userId, username, sessionId, refreshTokenExpiration, "REFRESH");
     }
 
-    private String generateToken(Long userId, String username, long expiration, String tokenType) {
+    private String generateToken(Long userId, String username, String sessionId, long expiration, String tokenType) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
 
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("type", tokenType);
+        claims.put("sessionId", sessionId);
 
         return Jwts.builder()
                 .claims(claims)
@@ -91,6 +92,10 @@ public class JwtTokenProvider {
 
     public String getTokenTypeFromToken(String token) {
         return parseToken(token).get("type", String.class);
+    }
+
+    public String getSessionIdFromToken(String token) {
+        return parseToken(token).get("sessionId", String.class);
     }
 
     public long getAccessTokenExpiration() {

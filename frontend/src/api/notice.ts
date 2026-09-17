@@ -1,5 +1,12 @@
 import request from '@/utils/request'
-import type { ApiResponse, PageResult, NoticeVO, NoticeCreateDTO, NoticeUpdateDTO } from '@/types'
+import type {
+  ApiResponse,
+  PageResult,
+  NoticeVO,
+  NoticeUserVO,
+  NoticeCreateDTO,
+  NoticeUpdateDTO,
+} from '@/types'
 
 export interface NoticeQuery {
   keyword?: string
@@ -12,6 +19,9 @@ export interface NoticeQuery {
 export const noticeApi = {
   getList: (params: NoticeQuery) =>
     request.get<ApiResponse<PageResult<NoticeVO>>>('/notices', { params }).then((r) => r.data.data),
+
+  getMyNotices: (params: { page?: number; pageSize?: number }) =>
+    request.get<ApiResponse<PageResult<NoticeUserVO>>>('/notices/my', { params }).then((r) => r.data.data),
 
   getById: (id: number) =>
     request.get<ApiResponse<NoticeVO>>(`/notices/${id}`).then((r) => r.data.data),

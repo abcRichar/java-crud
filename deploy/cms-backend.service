@@ -1,0 +1,30 @@
+[Unit]
+Description=CMS Backend Spring Boot Service
+After=network.target mysql.service redis.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/www/wwwroot/cms/backend
+ExecStart=/usr/bin/java -jar /www/wwwroot/cms/backend/cms-backend-1.0.0.jar --spring.profiles.active=prod --server.address=127.0.0.1
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=always
+RestartSec=5
+
+# 环境变量（生产环境必须修改）
+Environment=DB_NAME=cms_db
+Environment=DB_USERNAME=cms
+Environment=DB_PASSWORD=请填写数据库密码
+Environment=JWT_SECRET=请填写至少32字节的随机密钥
+Environment="REDIS_PASSWORD="
+
+# 如果数据库/Redis 不在本机，再加这些
+# Environment=DB_HOST=127.0.0.1
+# Environment=REDIS_HOST=127.0.0.1
+
+# 日志
+StandardOutput=append:/www/wwwroot/cms/backend/logs/app.log
+StandardError=append:/www/wwwroot/cms/backend/logs/error.log
+
+[Install]
+WantedBy=multi-user.target

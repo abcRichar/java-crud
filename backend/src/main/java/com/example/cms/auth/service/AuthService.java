@@ -7,7 +7,9 @@ import com.example.cms.auth.vo.LoginVO;
 import com.example.cms.auth.vo.UserInfoVO;
 import com.example.cms.common.enums.ResultCode;
 import com.example.cms.common.exception.BusinessException;
+import com.example.cms.common.utils.SecurityUtils;
 import com.example.cms.security.JwtTokenProvider;
+import com.example.cms.security.TokenSessionService;
 import com.example.cms.user.entity.User;
 import com.example.cms.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -26,6 +29,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AuthRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenSessionService tokenSessionService;
     private final PasswordEncoder passwordEncoder;
 
     public LoginVO login(LoginRequest request, HttpServletRequest httpRequest) {
@@ -49,8 +53,10 @@ public class AuthService {
             throw new BusinessException(ResultCode.PASSWORD_ERROR);
         }
 
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+        String sessionId = UUID.randomUUID().toString();
+        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), sessionId);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername(), sessionId);
+        tokenSessionService.createSession(sessionId, user.getId());
 
         authRepository.insertLoginLog(username, ip, userAgent, 1, "登录成功");
 
@@ -73,7 +79,11 @@ public class AuthService {
         }
 
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
-        String username = jwtTokenProvider.getUsernameFromToken(refreshToken);
+        String sessionId = jwtTokenProvider.getSessionIdFromToken(refreshToken);
+
+        if (!tokenSessionService.consumeSession(sessionId, userId)) {
+            throw new BusinessException(ResultCode.REFRESH_TOKEN_INVALID);
+        }
 
         // Verify user still exists and is active
         User user = userRepository.findById(userId)
@@ -83,8 +93,10 @@ public class AuthService {
             throw new BusinessException(ResultCode.USER_DISABLED);
         }
 
-        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername());
-        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+        String newSessionId = UUID.randomUUID().toString();
+        String newAccessToken = jwtTokenProvider.generateAccessToken(user.getId(), user.getUsername(), newSessionId);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername(), newSessionId);
+        tokenSessionService.createSession(newSessionId, user.getId());
 
         UserInfoVO userInfo = buildUserInfoVO(user);
         long expiresIn = jwtTokenProvider.getAccessTokenExpiration() / 1000;
@@ -99,8 +111,9 @@ public class AuthService {
     }
 
     public void logout() {
-        // Stateless JWT: client discards tokens. Server-side blacklist can be added via Redis if needed.
-        log.info("User logged out");
+        String sessionId = SecurityUtils.getCurrentSessionId();
+        tokenSessionService.revokeSession(sessionId);
+        log.info("User logged out, sessionId={}", sessionId);
     }
 
     private UserInfoVO buildUserInfoVO(User user) {

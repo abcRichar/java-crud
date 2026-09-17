@@ -1,6 +1,7 @@
 package com.example.cms.user.repository;
 
 import com.example.cms.user.entity.User;
+import com.example.cms.user.vo.UserOptionVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -198,10 +199,52 @@ public class UserRepository {
         String sql = """
                 SELECT DISTINCT m.permission
                 FROM sys_user_role ur
+                INNER JOIN sys_role r ON ur.role_id = r.id
                 INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id
                 INNER JOIN sys_menu m ON rm.menu_id = m.id
-                WHERE ur.user_id = ? AND m.deleted = 0 AND m.permission != '' AND m.status = 1
+                WHERE ur.user_id = ?
+                  AND r.deleted = 0 AND r.status = 1
+                  AND m.deleted = 0 AND m.permission != '' AND m.status = 1
                 """;
         return jdbcTemplate.queryForList(sql, String.class, userId);
+    }
+
+    public boolean hasRoleCode(Long userId, String roleCode) {
+        String sql = """
+                SELECT COUNT(*)
+                FROM sys_user_role ur
+                INNER JOIN sys_role r ON ur.role_id = r.id
+                WHERE ur.user_id = ? AND r.code = ? AND r.deleted = 0
+                """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, userId, roleCode);
+        return count != null && count > 0;
+    }
+
+    public long countEnabledUsersByRoleCodeExcept(String roleCode, Long exceptUserId) {
+        String sql = """
+                SELECT COUNT(DISTINCT u.id)
+                FROM sys_user u
+                INNER JOIN sys_user_role ur ON u.id = ur.user_id
+                INNER JOIN sys_role r ON ur.role_id = r.id
+                WHERE u.deleted = 0 AND u.status = 1
+                  AND r.deleted = 0 AND r.status = 1 AND r.code = ?
+                  AND u.id != ?
+                """;
+        Long count = jdbcTemplate.queryForObject(sql, Long.class, roleCode, exceptUserId);
+        return count != null ? count : 0;
+    }
+
+    public List<UserOptionVO> findActiveOptions() {
+        String sql = """
+                SELECT id, username, nickname
+                FROM sys_user
+                WHERE deleted = 0 AND status = 1
+                ORDER BY nickname ASC, id ASC
+                """;
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new UserOptionVO(
+                rs.getLong("id"),
+                rs.getString("username"),
+                rs.getString("nickname")
+        ));
     }
 }

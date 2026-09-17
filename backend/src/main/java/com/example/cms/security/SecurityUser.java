@@ -17,13 +17,16 @@ public class SecurityUser implements UserDetails {
     private final String password;
     private final boolean enabled;
     private final Set<String> permissions;
+    private final String sessionId;
 
-    public SecurityUser(Long userId, String username, String password, boolean enabled, Set<String> permissions) {
+    public SecurityUser(Long userId, String username, String password, boolean enabled,
+                        Set<String> permissions, String sessionId) {
         this.userId = userId;
         this.username = username;
         this.password = password;
         this.enabled = enabled;
         this.permissions = permissions;
+        this.sessionId = sessionId;
     }
 
     @Override

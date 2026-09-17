@@ -70,7 +70,7 @@ mkdir -p /opt/cms/sql
 # 本地执行：scp backend/sql/schema.sql backend/sql/data.sql root@服务器IP:/opt/cms/sql/
 ```
 
-导入（schema.sql 自带建库，data.sql 可安全重复执行）：
+导入（schema.sql 自带建库；data.sql 幂等，不会清空已有业务数据）：
 
 ```bash
 mysql -uroot -p < /opt/cms/sql/schema.sql
@@ -115,7 +115,7 @@ scp target/cms-backend-1.0.0.jar root@服务器IP:/opt/cms/backend/
 
 ## 5. 配置并启动后端
 
-后端用 `prod` profile，连接信息支持环境变量覆盖（配置里已有默认值 127.0.0.1，不设也能启动；但生产环境建议至少改 DB_PASSWORD 和 JWT_SECRET）：
+后端用 `prod` profile，连接地址有本地默认值，但 `DB_PASSWORD` 和 `JWT_SECRET` 必须设置：
 
 | 环境变量 | 示例值 | 说明 |
 |----------|--------|------|
@@ -123,11 +123,11 @@ scp target/cms-backend-1.0.0.jar root@服务器IP:/opt/cms/backend/
 | DB_PORT | 3306 | MySQL 端口 |
 | DB_NAME | cms_db | 库名 |
 | DB_USERNAME | cms | 数据库账号 |
-| DB_PASSWORD | 你的密码 | 数据库密码 |
+| DB_PASSWORD | 你的密码 | 数据库密码，必填 |
 | REDIS_HOST | 127.0.0.1 | Redis 地址 |
 | REDIS_PORT | 6379 | Redis 端口 |
 | REDIS_PASSWORD | (留空) | Redis 密码，没有就设为空串 |
-| JWT_SECRET | (可选) | 签名密钥，建议生产换一个随机值 |
+| JWT_SECRET | 随机长字符串 | 签名密钥，必填 |
 
 用 systemd 托管，进程崩溃自动重启：
 
@@ -144,11 +144,11 @@ Environment=DB_HOST=127.0.0.1
 Environment=DB_PORT=3306
 Environment=DB_NAME=cms_db
 Environment=DB_USERNAME=cms
-Environment=DB_PASSWORD=你的数据库密码
+Environment=DB_PASSWORD=请填写数据库密码
 Environment=REDIS_HOST=127.0.0.1
 Environment=REDIS_PORT=6379
 Environment="REDIS_PASSWORD="
-Environment=JWT_SECRET=换成一段随机长字符串
+Environment=JWT_SECRET=请填写至少32字节的随机密钥
 ExecStart=/usr/bin/java -jar /opt/cms/backend/cms-backend-1.0.0.jar --spring.profiles.active=prod
 Restart=always
 RestartSec=10
@@ -242,7 +242,7 @@ curl http://服务器IP/api/v1/auth/login -X POST -H "Content-Type: application/
 ## 8. 常见问题
 
 **Q1: 启动报数据库连接失败**
-检查 DB_HOST、DB_PASSWORD 等环境变量是否正确。prod 配置已有默认值（localhost），但数据库密码默认是 123456，你的服务器密码可能不同。
+检查 DB_HOST、DB_NAME、DB_USERNAME、DB_PASSWORD 等环境变量是否正确。生产 profile 不再提供默认密码。
 
 **Q2: MySQL root 登录不上去**
 Ubuntu 的 MySQL 8 root 默认用 auth_socket，直接 `sudo mysql` 免密进，再改密码或按第 3 节建专用账号。
@@ -257,7 +257,7 @@ Ubuntu 的 MySQL 8 root 默认用 auth_socket，直接 `sudo mysql` 免密进，
 ```bash
 # 后端：传新 jar → systemctl restart cms-backend
 # 前端：传新 dist → 无需重启 Nginx，直接覆盖
-# 数据库：schema.sql 有变更时先备份再执行，data.sql 可安全重复执行
+# 数据库：schema.sql 有变更时先备份再执行；data.sql 幂等且不会清空业务数据
 ```
 
 **Q6: 时区差 8 小时**

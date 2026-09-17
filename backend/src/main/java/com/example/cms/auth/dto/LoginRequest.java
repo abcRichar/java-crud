@@ -1,5 +1,6 @@
 package com.example.cms.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -10,5 +11,6 @@ public class LoginRequest {
     private String username;
 
     @NotBlank(message = "密码不能为空")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 }

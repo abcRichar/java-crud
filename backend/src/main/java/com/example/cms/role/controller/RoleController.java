@@ -1,5 +1,6 @@
 package com.example.cms.role.controller;
 
+import com.example.cms.common.dto.StatusUpdateDTO;
 import com.example.cms.common.response.ApiResponse;
 import com.example.cms.common.response.PageResult;
 import com.example.cms.role.dto.RoleCreateDTO;
@@ -14,8 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-
 @Tag(name = "角色管理", description = "角色CRUD、权限分配")
 @RestController
 @RequestMapping("/roles")
@@ -74,8 +73,8 @@ public class RoleController {
     @Operation(summary = "启用/禁用角色")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAuthority('role:update')")
-    public ApiResponse<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
-        roleService.updateStatus(id, body.get("status"));
+    public ApiResponse<Void> updateStatus(@PathVariable Long id, @Valid @RequestBody StatusUpdateDTO dto) {
+        roleService.updateStatus(id, dto.getStatus());
         return ApiResponse.success();
     }
 }

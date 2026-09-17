@@ -1,5 +1,6 @@
 package com.example.cms.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,6 +21,7 @@ public class UserCreateDTO {
 
     @NotBlank(message = "密码不能为空")
     @Size(min = 6, max = 32, message = "密码长度6-32个字符")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Email(message = "邮箱格式不正确")

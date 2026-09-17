@@ -4,8 +4,9 @@ import {
 } from 'antd'
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { noticeApi, type NoticeQuery } from '@/api/notice'
+import { userApi } from '@/api/user'
 import Permission from '@/components/Permission'
-import type { NoticeVO } from '@/types'
+import type { NoticeVO, UserOptionVO } from '@/types'
 import dayjs from 'dayjs'
 
 const typeMap: Record<string, { text: string; color: string }> = {
@@ -28,6 +29,7 @@ export default function NoticeList() {
   const [query, setQuery] = useState<NoticeQuery>({ page: 1, pageSize: 10 })
   const [modalVisible, setModalVisible] = useState(false)
   const [editingNotice, setEditingNotice] = useState<NoticeVO | null>(null)
+  const [userOptions, setUserOptions] = useState<UserOptionVO[]>([])
   const [form] = Form.useForm()
 
   const fetchData = async () => {
@@ -45,10 +47,14 @@ export default function NoticeList() {
     fetchData()
   }, [query])
 
+  useEffect(() => {
+    userApi.getOptions().then(setUserOptions).catch(() => {})
+  }, [])
+
   const handleAdd = () => {
     setEditingNotice(null)
     form.resetFields()
-    form.setFieldsValue({ type: 'NOTICE' })
+    form.setFieldsValue({ type: 'NOTICE', userIds: [] })
     setModalVisible(true)
   }
 
@@ -61,6 +67,7 @@ export default function NoticeList() {
         title: full.title,
         content: full.content,
         type: full.type,
+        userIds: full.userIds || [],
       })
       setModalVisible(true)
     }).catch(() => {})
@@ -217,6 +224,22 @@ export default function NoticeList() {
           </Form.Item>
           <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
             <Select options={Object.entries(typeMap).map(([value, { text }]) => ({ label: text, value }))} />
+          </Form.Item>
+          <Form.Item
+            name="userIds"
+            label="接收用户"
+            extra="不选择时，发布后发送给全部启用用户"
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              optionFilterProp="label"
+              placeholder="请选择接收用户，不选则发送给全部用户"
+              options={userOptions.map((user) => ({
+                label: `${user.nickname || user.username} (${user.username})`,
+                value: user.id,
+              }))}
+            />
           </Form.Item>
           <Form.Item name="content" label="内容" rules={[{ required: true, message: '请输入内容' }]}>
             <Input.TextArea rows={6} placeholder="请输入通知内容" />

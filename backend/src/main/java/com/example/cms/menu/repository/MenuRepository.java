@@ -62,9 +62,12 @@ public class MenuRepository {
         String sql = """
                 SELECT DISTINCT m.id, m.parent_id, m.name, m.title, m.path, m.component, m.icon, m.type, m.permission, m.sort, m.visible, m.status, m.created_at, m.updated_at
                 FROM sys_user_role ur
+                INNER JOIN sys_role r ON ur.role_id = r.id
                 INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id
                 INNER JOIN sys_menu m ON rm.menu_id = m.id
-                WHERE ur.user_id = ? AND m.deleted = 0 AND m.status = 1 AND m.type != 'BUTTON'
+                WHERE ur.user_id = ?
+                  AND r.deleted = 0 AND r.status = 1
+                  AND m.deleted = 0 AND m.status = 1 AND m.type != 'BUTTON'
                 ORDER BY m.sort ASC, m.id ASC
                 """;
         return jdbcTemplate.query(sql, MENU_ROW_MAPPER, userId);
@@ -74,9 +77,12 @@ public class MenuRepository {
         String sql = """
                 SELECT DISTINCT m.id, m.parent_id, m.name, m.title, m.path, m.component, m.icon, m.type, m.permission, m.sort, m.visible, m.status, m.created_at, m.updated_at
                 FROM sys_user_role ur
+                INNER JOIN sys_role r ON ur.role_id = r.id
                 INNER JOIN sys_role_menu rm ON ur.role_id = rm.role_id
                 INNER JOIN sys_menu m ON rm.menu_id = m.id
-                WHERE ur.user_id = ? AND m.deleted = 0 AND m.status = 1 AND m.type = 'BUTTON'
+                WHERE ur.user_id = ?
+                  AND r.deleted = 0 AND r.status = 1
+                  AND m.deleted = 0 AND m.status = 1 AND m.type = 'BUTTON'
                 """;
         return jdbcTemplate.query(sql, MENU_ROW_MAPPER, userId);
     }

@@ -10,6 +10,7 @@ import com.example.cms.category.repository.CategoryRepository;
 import com.example.cms.common.enums.ResultCode;
 import com.example.cms.common.exception.BusinessException;
 import com.example.cms.common.response.PageResult;
+import com.example.cms.common.utils.PageUtils;
 import com.example.cms.common.utils.SecurityUtils;
 import com.example.cms.user.entity.User;
 import com.example.cms.user.repository.UserRepository;
@@ -30,8 +31,9 @@ public class ArticleService {
     private final UserRepository userRepository;
 
     public PageResult<ArticleVO> getPage(String keyword, Long categoryId, String status, int page, int pageSize) {
-        int offset = (page - 1) * pageSize;
-        List<Article> articles = articleRepository.findPage(keyword, categoryId, status, offset, pageSize);
+        PageUtils.Page pageInfo = PageUtils.normalize(page, pageSize);
+        List<Article> articles = articleRepository.findPage(
+                keyword, categoryId, status, pageInfo.offset(), pageInfo.pageSize());
         long total = articleRepository.count(keyword, categoryId, status);
 
         // Batch load category names
@@ -40,7 +42,7 @@ public class ArticleService {
         List<ArticleVO> voList = articles.stream()
                 .map(a -> toVO(a, categoryNames.get(a.getCategoryId())))
                 .toList();
-        return PageResult.of(voList, total, page, pageSize);
+        return PageResult.of(voList, total, pageInfo.page(), pageInfo.pageSize());
     }
 
     public ArticleVO getById(Long id) {
@@ -60,7 +62,11 @@ public class ArticleService {
         article.setContent(dto.getContent());
         article.setCover(dto.getCover());
         article.setCategoryId(dto.getCategoryId());
-        article.setStatus(dto.getStatus() != null ? dto.getStatus() : "DRAFT");
+        String status = dto.getStatus() != null ? dto.getStatus() : "DRAFT";
+        article.setStatus(status);
+        if ("PUBLISHED".equals(status)) {
+            article.setPublishedAt(java.time.LocalDateTime.now());
+        }
         article.setSeoTitle(dto.getSeoTitle());
         article.setSeoDescription(dto.getSeoDescription());
 

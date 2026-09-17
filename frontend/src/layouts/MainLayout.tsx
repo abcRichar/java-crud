@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Badge, Button, Tooltip } from 'antd'
+import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Button, Tooltip } from 'antd'
 import {
   DashboardOutlined,
   SettingOutlined,
@@ -7,7 +7,6 @@ import {
   AuditOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  BellOutlined,
   FullscreenOutlined,
   FullscreenExitOutlined,
   LogoutOutlined,
@@ -15,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import NoticeBell from '@/components/NoticeBell'
 import type { MenuVO } from '@/types'
 import dayjs from 'dayjs'
 
@@ -188,16 +188,7 @@ export default function MainLayout() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 13, color: '#9ca3af', marginRight: 8 }}>{today}</span>
-            <Tooltip title="通知">
-              <Button
-                type="text"
-                icon={
-                  <Badge count={0} size="small" offset={[-2, 2]}>
-                    <BellOutlined style={{ fontSize: 17 }} />
-                  </Badge>
-                }
-              />
-            </Tooltip>
+            <NoticeBell />
             <Tooltip title={fullscreen ? '退出全屏' : '全屏'}>
               <Button
                 type="text"
